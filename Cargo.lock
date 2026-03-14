@@ -596,12 +596,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "erudition"
+name = "erudition-app"
 version = "0.1.0"
 dependencies = [
  "dioxus",
  "dioxus-signals",
 ]
+
+[[package]]
+name = "erudition-server"
+version = "0.1.0"
 
 [[package]]
 name = "euclid"
