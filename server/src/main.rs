@@ -1,13 +1,30 @@
+use std::sync::Mutex;
+
+use actix_web::web::Data;
 use actix_web::{App, HttpResponse, HttpServer, Responder, get};
+use serde::Serialize;
+
+#[derive(Serialize)]
+enum Item {
+    MultipleChoice {
+        question: String,
+        answers: Vec<String>,
+    },
+}
+
+#[derive(Default, Serialize)]
+struct Items(Mutex<Vec<Item>>);
 
 #[get("/list")]
-async fn list() -> impl Responder {
-    HttpResponse::Ok().json("Hello world!\n")
+async fn list(items: Data<Items>) -> impl Responder {
+    HttpResponse::Ok().json(items)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().service(list))
+    let items = Data::new(Items::default());
+
+    HttpServer::new(move || App::new().app_data(items.clone()).service(list))
         .bind(("127.0.0.1", 8080))?
         .run()
         .await
