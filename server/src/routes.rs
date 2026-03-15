@@ -24,6 +24,16 @@ async fn edit(
     )
 }
 
+#[post("/feedback")]
+async fn feedback(
+    item: Json<String>,
+    state: Data<ServerState>,
+) -> HttpResponse {
+    state.log(&format!("POST: /add: {item:?}"));
+    state.add_feedback(item.into_inner());
+    HttpResponse::Ok().into()
+}
+
 #[post("/add")]
 async fn add(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
     state.log(&format!("POST: /add: {item:?}"));
@@ -40,7 +50,7 @@ where T: ServiceFactory<
             Error = Error,
             InitError = (),
         > {
-    app.service(add).service(list).service(edit)
+    app.service(add).service(list).service(edit).service(feedback)
 }
 
 /// From a boolean indicating if an internal error occurence, create an

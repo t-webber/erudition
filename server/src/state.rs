@@ -12,6 +12,8 @@ use crate::item::Item;
 pub struct ServerState {
     /// Path of the file where the items are stored
     data_path: PathBuf,
+    /// List of feedback
+    feedback: Mutex<Vec<String>>,
     /// List of current items
     items: Mutex<Vec<Item>>,
     /// Path of the file where to write logs
@@ -19,6 +21,16 @@ pub struct ServerState {
 }
 
 impl ServerState {
+    /// Save a new feedback
+    pub fn add_feedback(&self, feedback: String) {
+        match self.feedback.lock() {
+            Ok(ref mut list) => list.push(feedback),
+            Err(ref mut err) => {
+                err.get_mut().push(feedback);
+            }
+        }
+    }
+
     /// Adds a new item to the server
     pub fn add_item(&self, item: Item) -> bool {
         match self.items.lock() {
@@ -77,7 +89,12 @@ impl ServerState {
         } else {
             None
         };
-        Ok(Self { items: items.unwrap_or_default(), data_path, log_path })
+        Ok(Self {
+            items: items.unwrap_or_default(),
+            data_path,
+            log_path,
+            feedback: Mutex::new(vec![]),
+        })
     }
 
     /// Writes some log to the log file

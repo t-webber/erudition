@@ -1,0 +1,2 @@
+- Add timestamp to log file
+- Suggest and view suggestions, plain text
