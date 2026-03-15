@@ -5,26 +5,21 @@ use crate::item::Item;
 use crate::state::{ItemError, ServerState};
 
 #[get("/list")]
-pub async fn list(items: Data<ServerState>, state: Data<ServerState>) -> HttpResponse {
+pub async fn list(state: Data<ServerState>) -> HttpResponse {
     state.log("GET: /list");
-    HttpResponse::Ok().json(items)
+    HttpResponse::Ok().json(state.items())
 }
 
 #[post("/add")]
 pub async fn add(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
     state.log(&format!("POST: /add: {item:?}"));
-    match state.items.lock() {
-        Ok(ref mut items) => items.push(item.into_inner()),
-        Err(ref mut err) => {
-            err.get_mut().push(item.into_inner());
-        }
-    }
+    state.add_item(item.into_inner());
     match state.store() {
         Ok(()) => HttpResponse::Ok().into(),
         Err(ItemError::PostCard(ser)) => {
             state.log(&format!(
                 "Failed to serialise items to disk:\nItems:\n{:?}\n\nError:\n{ser}",
-                state.items
+                state.items()
             ));
             HttpResponse::UnprocessableEntity().body(format!("Failed to serialise data: {ser}"))
         }

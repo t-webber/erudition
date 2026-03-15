@@ -10,11 +10,11 @@ use crate::item::Item;
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct ServerState {
     /// Path of the file where the items are stored
-    pub data_path: String,
+    data_path: String,
     /// List of current items
-    pub items: Mutex<Vec<Item>>,
+    items: Mutex<Vec<Item>>,
     /// Path of the file where to write logs
-    pub log_path: String,
+    log_path: String,
 }
 
 /// Error that may happen when handling [`Item`]s
@@ -26,6 +26,21 @@ pub enum ItemError {
 }
 
 impl ServerState {
+    /// Adds a new item to the server
+    pub fn add_item(&self, item: Item) {
+        match self.items.lock() {
+            Ok(ref mut items) => items.push(item),
+            Err(ref mut err) => {
+                err.get_mut().push(item);
+            }
+        }
+    }
+
+    /// Returns the list of items currently on the server
+    pub const fn items(&self) -> &Mutex<Vec<Item>> {
+        &self.items
+    }
+
     /// Loads the state from the given file path
     pub fn load(data_path: String, log_path: String) -> color_eyre::Result<Self> {
         let data_exists = fs::exists(&data_path).with_context(|| {
@@ -61,7 +76,7 @@ impl ServerState {
 
     /// Store the current state of the server at the given file path
     pub fn store(&self) -> Result<(), ItemError> {
-        let data = postcard::to_allocvec(&self).map_err(ItemError::PostCard)?;
+        let data = postcard::to_allocvec(&self.items).map_err(ItemError::PostCard)?;
         fs::write(&self.data_path, data).map_err(ItemError::Io)?;
         Ok(())
     }
