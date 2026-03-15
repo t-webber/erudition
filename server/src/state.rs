@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::Mutex;
 use std::{fs, io};
 
@@ -10,11 +11,11 @@ use crate::item::Item;
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct ServerState {
     /// Path of the file where the items are stored
-    data_path: String,
+    data_path: PathBuf,
     /// List of current items
     items: Mutex<Vec<Item>>,
     /// Path of the file where to write logs
-    log_path: String,
+    log_path: PathBuf,
 }
 
 /// Error that may happen when handling [`Item`]s
@@ -42,18 +43,21 @@ impl ServerState {
     }
 
     /// Loads the state from the given file path
-    pub fn load(data_path: String, log_path: String) -> color_eyre::Result<Self> {
+    pub fn load(data_path: PathBuf, log_path: PathBuf) -> color_eyre::Result<Self> {
         let data_exists = fs::exists(&data_path).with_context(|| {
-            format!("Failed to check existance of {data_path}, do I have access?")
+            format!(
+                "Failed to check existance of {}, do I have access?",
+                data_path.display()
+            )
         })?;
         let items = if data_exists {
             Some(
                 postcard::from_bytes(
                     fs::read_to_string(&data_path)
-                        .with_context(|| format!("Failed to read {data_path}"))?
+                        .with_context(|| format!("Failed to read {}", data_path.display()))?
                         .as_bytes(),
                 )
-                .with_context(|| format!("File {data_path} has invalid data"))?,
+                .with_context(|| format!("File {} has invalid data", data_path.display()))?,
             )
         } else {
             None
@@ -70,7 +74,7 @@ impl ServerState {
     pub fn log(&self, msg: &str) {
         eprintln!("{msg}");
         if let Err(err) = fs::write(&self.log_path, msg) {
-            eprintln!("Failed to log error to {}: {err}", self.log_path);
+            eprintln!("Failed to log error to {}: {err}", self.log_path.display());
         }
     }
 
