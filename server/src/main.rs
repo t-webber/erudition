@@ -4,6 +4,7 @@ use std::sync::Mutex;
 
 use actix_web::web::{Data, Json};
 use actix_web::{App, HttpResponse, HttpServer, get, post};
+use color_eyre::eyre::Context;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -29,8 +30,13 @@ impl Items {
         Ok(())
     }
 
-    fn load() -> Self {
-        postcard::from_bytes(fs::read_to_string("data").unwrap().as_bytes()).unwrap()
+    fn load() -> color_eyre::Result<Self> {
+        postcard::from_bytes(
+            fs::read_to_string("data")
+                .context("Failed to read data")?
+                .as_bytes(),
+        )
+        .context("File data has invalid data")
     }
 }
 
@@ -56,8 +62,8 @@ async fn add(item: Json<Item>, items: Data<Items>) -> HttpResponse {
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    let items = Data::new(Items::load());
+async fn main() -> color_eyre::Result<()> {
+    let items = Data::new(Items::load()?);
 
     HttpServer::new(move || {
         App::new()
@@ -65,7 +71,9 @@ async fn main() -> std::io::Result<()> {
             .service(list)
             .service(add)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("127.0.0.1", 8080))
+    .context("Failed to bind at localhost:8080")?
     .run()
     .await
+    .context("Failed to run server")
 }
