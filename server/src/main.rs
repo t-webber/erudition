@@ -4,6 +4,7 @@ use std::sync::Mutex;
 
 use actix_web::web::{Data, Json};
 use actix_web::{App, HttpResponse, HttpServer, get, post};
+use clap::Parser;
 use color_eyre::eyre::Context;
 use serde::{Deserialize, Serialize};
 
@@ -61,19 +62,38 @@ async fn add(item: Json<Item>, items: Data<Items>) -> HttpResponse {
     }
 }
 
+#[derive(Parser)]
+struct Server {
+    #[arg(short = 'H', long, default_value = "localhost")]
+    host: String,
+    #[arg(short = 'P', long, default_value_t = 3000)]
+    port: u16,
+}
+
+impl Server {
+    async fn run(self) -> color_eyre::Result<()> {
+        let items = Data::new(Items::load()?);
+
+        println!(
+            "Erudition-server running on http://{}:{}",
+            self.host, self.port
+        );
+
+        HttpServer::new(move || {
+            App::new()
+                .app_data(items.clone())
+                .service(list)
+                .service(add)
+        })
+        .bind((self.host, self.port))
+        .context("Failed to bind at localhost:8080")?
+        .run()
+        .await
+        .context("Failed to run server")
+    }
+}
+
 #[actix_web::main]
 async fn main() -> color_eyre::Result<()> {
-    let items = Data::new(Items::load()?);
-
-    HttpServer::new(move || {
-        App::new()
-            .app_data(items.clone())
-            .service(list)
-            .service(add)
-    })
-    .bind(("127.0.0.1", 8080))
-    .context("Failed to bind at localhost:8080")?
-    .run()
-    .await
-    .context("Failed to run server")
+    Server::parse().run().await
 }
