@@ -14,19 +14,23 @@ enum Item {
     },
 }
 
-#[derive(Default, Serialize, Debug)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 struct Items(Mutex<Vec<Item>>);
 
-enum SaveError {
+enum ItemError {
     Io(io::Error),
-    Serialisation(postcard::Error),
+    PostCard(postcard::Error),
 }
 
 impl Items {
-    fn save(&self) -> Result<(), SaveError> {
-        let data = postcard::to_allocvec(&self).map_err(SaveError::Serialisation)?;
-        fs::write("data", data).map_err(SaveError::Io)?;
+    fn store(&self) -> Result<(), ItemError> {
+        let data = postcard::to_allocvec(&self).map_err(ItemError::PostCard)?;
+        fs::write("data", data).map_err(ItemError::Io)?;
         Ok(())
+    }
+
+    fn load() -> Self {
+        postcard::from_bytes(fs::read_to_string("data").unwrap().as_bytes()).unwrap()
     }
 }
 
@@ -38,13 +42,13 @@ async fn list(items: Data<Items>) -> HttpResponse {
 #[post("/add")]
 async fn add(item: Json<Item>, items: Data<Items>) -> HttpResponse {
     items.0.lock().unwrap().push(item.into_inner());
-    match items.save() {
+    match items.store() {
         Ok(()) => HttpResponse::Ok().into(),
-        Err(SaveError::Serialisation(ser)) => {
+        Err(ItemError::PostCard(ser)) => {
             eprintln!("Failed to serialise items to disk:\nItems:\n{items:?}\n\nError:\n{ser}");
             HttpResponse::UnprocessableEntity().body(format!("Failed to serialise data: {ser}"))
         }
-        Err(SaveError::Io(io)) => {
+        Err(ItemError::Io(io)) => {
             eprintln!("Failed to save items to disk: {io}");
             HttpResponse::InternalServerError().into()
         }
@@ -53,7 +57,7 @@ async fn add(item: Json<Item>, items: Data<Items>) -> HttpResponse {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let items = Data::new(Items::default());
+    let items = Data::new(Items::load());
 
     HttpServer::new(move || {
         App::new()
