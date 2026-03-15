@@ -1,6 +1,6 @@
+use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use std::{fs, io};
 
 use color_eyre::eyre::Context as _;
 use serde::{Deserialize, Serialize};
@@ -18,38 +18,31 @@ pub struct ServerState {
     log_path: PathBuf,
 }
 
-/// Error that may happen when handling [`Item`]s
-pub enum ItemError {
-    /// Io error
-    Io(io::Error),
-    /// Serde error through postcard
-    PostCard(postcard::Error),
-}
-
 impl ServerState {
     /// Adds a new item to the server
-    pub fn add_item(&self, item: Item) {
+    pub fn add_item(&self, item: Item) -> bool {
         match self.items.lock() {
             Ok(ref mut items) => items.push(item),
             Err(ref mut err) => {
                 err.get_mut().push(item);
             }
         }
+        self.store()
     }
 
     /// Edit an existant item
-    pub fn edit_item(&self, index: usize, item: Item) -> bool {
+    pub fn edit_item(&self, index: usize, item: Item) -> Option<bool> {
         let edit = |maybe_old: Option<&mut Item>| {
-            maybe_old.is_some_and(|old| {
+            maybe_old.map(|old| {
                 *old = item;
-                true
             })
         };
 
         match self.items.lock() {
-            Ok(ref mut items) => edit(items.get_mut(index)),
-            Err(err) => edit(err.into_inner().get_mut(index)),
+            Ok(mut items) => edit(items.get_mut(index)),
+            Err(mut err) => edit(err.get_mut().get_mut(index)),
         }
+        .map(|()| self.store())
     }
 
     /// Returns the list of items currently on the server
@@ -101,10 +94,22 @@ impl ServerState {
 
     /// Store the current state of the server at the given
     /// file path
-    pub fn store(&self) -> Result<(), ItemError> {
-        let data =
-            postcard::to_allocvec(&self.items).map_err(ItemError::PostCard)?;
-        fs::write(&self.data_path, data).map_err(ItemError::Io)?;
-        Ok(())
+    pub fn store(&self) -> bool {
+        self.log("Storing data");
+        postcard::to_allocvec(&self.items)
+            .map_err(|err| {
+                format!(
+                    "Failed to serialise items to \
+                     disk:\nItems:\n{:?}\n\nError:\n{err}",
+                    self.items()
+                )
+            })
+            .and_then(|data| {
+                fs::write(&self.data_path, data).map_err(|err| {
+                    format!("Failed to save items to disk: {err}")
+                })
+            })
+            .map_err(|msg| self.log(&msg))
+            .is_ok()
     }
 }
