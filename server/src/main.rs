@@ -17,42 +17,51 @@ enum Item {
 }
 
 #[derive(Default, Serialize, Deserialize, Debug)]
-struct Items(Mutex<Vec<Item>>);
+struct ServerState {
+    items: Mutex<Vec<Item>>,
+    file: String,
+}
 
 enum ItemError {
     Io(io::Error),
     PostCard(postcard::Error),
 }
 
-impl Items {
+impl ServerState {
     fn store(&self) -> Result<(), ItemError> {
         let data = postcard::to_allocvec(&self).map_err(ItemError::PostCard)?;
-        fs::write("data", data).map_err(ItemError::Io)?;
+        fs::write(&self.file, data).map_err(ItemError::Io)?;
         Ok(())
     }
 
-    fn load() -> color_eyre::Result<Self> {
-        postcard::from_bytes(
-            fs::read_to_string("data")
-                .context("Failed to read data")?
-                .as_bytes(),
-        )
-        .context("File data has invalid data")
+    fn load(file: String) -> color_eyre::Result<Self> {
+        Ok(Self {
+            items: postcard::from_bytes(
+                fs::read_to_string(&file)
+                    .with_context(|| format!("Failed to read {file}"))?
+                    .as_bytes(),
+            )
+            .with_context(|| format!("File {file} has invalid data"))?,
+            file,
+        })
     }
 }
 
 #[get("/list")]
-async fn list(items: Data<Items>) -> HttpResponse {
+async fn list(items: Data<ServerState>) -> HttpResponse {
     HttpResponse::Ok().json(items)
 }
 
 #[post("/add")]
-async fn add(item: Json<Item>, items: Data<Items>) -> HttpResponse {
-    items.0.lock().unwrap().push(item.into_inner());
-    match items.store() {
+async fn add(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
+    state.items.lock().unwrap().push(item.into_inner());
+    match state.store() {
         Ok(()) => HttpResponse::Ok().into(),
         Err(ItemError::PostCard(ser)) => {
-            eprintln!("Failed to serialise items to disk:\nItems:\n{items:?}\n\nError:\n{ser}");
+            eprintln!(
+                "Failed to serialise items to disk:\nItems:\n{:?}\n\nError:\n{ser}",
+                state.items
+            );
             HttpResponse::UnprocessableEntity().body(format!("Failed to serialise data: {ser}"))
         }
         Err(ItemError::Io(io)) => {
@@ -64,6 +73,8 @@ async fn add(item: Json<Item>, items: Data<Items>) -> HttpResponse {
 
 #[derive(Parser)]
 struct Server {
+    #[arg(short = 'F', long, default_value = "data")]
+    file: String,
     #[arg(short = 'H', long, default_value = "localhost")]
     host: String,
     #[arg(short = 'P', long, default_value_t = 3000)]
@@ -72,7 +83,7 @@ struct Server {
 
 impl Server {
     async fn run(self) -> color_eyre::Result<()> {
-        let items = Data::new(Items::load()?);
+        let state = Data::new(ServerState::load(self.file)?);
 
         println!(
             "Erudition-server running on http://{}:{}",
@@ -81,7 +92,7 @@ impl Server {
 
         HttpServer::new(move || {
             App::new()
-                .app_data(items.clone())
+                .app_data(state.clone())
                 .service(list)
                 .service(add)
         })
