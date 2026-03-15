@@ -37,6 +37,21 @@ impl ServerState {
         }
     }
 
+    /// Edit an existant item
+    pub fn edit_item(&self, index: usize, item: Item) -> bool {
+        let edit = |maybe_old: Option<&mut Item>| {
+            maybe_old.is_some_and(|old| {
+                *old = item;
+                true
+            })
+        };
+
+        match self.items.lock() {
+            Ok(ref mut items) => edit(items.get_mut(index)),
+            Err(err) => edit(err.into_inner().get_mut(index)),
+        }
+    }
+
     /// Returns the list of items currently on the server
     pub const fn items(&self) -> &Mutex<Vec<Item>> {
         &self.items

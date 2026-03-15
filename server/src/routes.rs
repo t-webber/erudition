@@ -1,17 +1,28 @@
-use actix_web::web::{Data, Json};
-use actix_web::{HttpResponse, get, post};
+use actix_web::dev::{ServiceFactory, ServiceRequest};
+use actix_web::web::{Data, Json, Path};
+use actix_web::{App, Error, HttpResponse, get, post, put};
 
 use crate::item::Item;
 use crate::state::{ItemError, ServerState};
 
 #[get("/list")]
-pub async fn list(state: Data<ServerState>) -> HttpResponse {
+async fn list(state: Data<ServerState>) -> HttpResponse {
     state.log("GET: /list");
     HttpResponse::Ok().json(state.items())
 }
 
+#[put("/edit/{index}")]
+async fn edit(state: Data<ServerState>, index: Path<usize>, item: Json<Item>) -> HttpResponse {
+    state.log(&format!("POST: /edit/{index}: {item:?}"));
+    if state.edit_item(index.into_inner(), item.into_inner()) {
+        HttpResponse::Ok().into()
+    } else {
+        HttpResponse::BadRequest().body("Index is not valid")
+    }
+}
+
 #[post("/add")]
-pub async fn add(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
+async fn add(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
     state.log(&format!("POST: /add: {item:?}"));
     state.add_item(item.into_inner());
     match state.store() {
@@ -28,4 +39,15 @@ pub async fn add(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
             HttpResponse::InternalServerError().into()
         }
     }
+}
+
+/// Registers all the routes of the app from the given file.
+///
+/// Works better here to not forget to register them.
+pub fn register_routes<
+    T: ServiceFactory<ServiceRequest, Config = (), Error = Error, InitError = ()>,
+>(
+    app: App<T>,
+) -> App<T> {
+    app.service(add).service(list).service(edit)
 }

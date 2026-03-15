@@ -6,7 +6,7 @@ use actix_web::{App, HttpServer};
 use clap::Parser;
 use color_eyre::eyre::{Context as _, ContextCompat as _, ensure};
 
-use crate::routes::{add, list};
+use crate::routes::register_routes;
 use crate::state::ServerState;
 
 /// Server app that runs with the given parameters
@@ -72,14 +72,9 @@ impl Server {
 
     #[actix_web::main]
     async fn serve(state: Data<ServerState>, host: String, port: u16) -> io::Result<()> {
-        HttpServer::new(move || {
-            App::new()
-                .app_data(state.clone())
-                .service(list)
-                .service(add)
-        })
-        .bind((host, port))?
-        .run()
-        .await
+        HttpServer::new(move || register_routes(App::new().app_data(state.clone())))
+            .bind((host, port))?
+            .run()
+            .await
     }
 }
