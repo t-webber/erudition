@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 pub enum Item {
     /// Multiple choice question
     MultipleChoice {
-        /// Possible answers, the first is always the correct answer
+        /// Possible answers, the first is always the
+        /// correct answer
         answers: Vec<String>,
         /// Question
         question: String,

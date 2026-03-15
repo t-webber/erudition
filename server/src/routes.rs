@@ -12,7 +12,11 @@ async fn list(state: Data<ServerState>) -> HttpResponse {
 }
 
 #[put("/edit/{index}")]
-async fn edit(state: Data<ServerState>, index: Path<usize>, item: Json<Item>) -> HttpResponse {
+async fn edit(
+    state: Data<ServerState>,
+    index: Path<usize>,
+    item: Json<Item>,
+) -> HttpResponse {
     state.log(&format!("POST: /edit/{index}: {item:?}"));
     if state.edit_item(index.into_inner(), item.into_inner()) {
         HttpResponse::Ok().into()
@@ -29,10 +33,12 @@ async fn add(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
         Ok(()) => HttpResponse::Ok().into(),
         Err(ItemError::PostCard(ser)) => {
             state.log(&format!(
-                "Failed to serialise items to disk:\nItems:\n{:?}\n\nError:\n{ser}",
+                "Failed to serialise items to \
+                 disk:\nItems:\n{:?}\n\nError:\n{ser}",
                 state.items()
             ));
-            HttpResponse::UnprocessableEntity().body(format!("Failed to serialise data: {ser}"))
+            HttpResponse::UnprocessableEntity()
+                .body(format!("Failed to serialise data: {ser}"))
         }
         Err(ItemError::Io(io)) => {
             state.log(&format!("Failed to save items to disk: {io}"));
@@ -44,10 +50,12 @@ async fn add(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
 /// Registers all the routes of the app from the given file.
 ///
 /// Works better here to not forget to register them.
-pub fn register_routes<
-    T: ServiceFactory<ServiceRequest, Config = (), Error = Error, InitError = ()>,
->(
-    app: App<T>,
-) -> App<T> {
+pub fn register_routes<T>(app: App<T>) -> App<T>
+where T: ServiceFactory<
+            ServiceRequest,
+            Config = (),
+            Error = Error,
+            InitError = (),
+        > {
     app.service(add).service(list).service(edit)
 }

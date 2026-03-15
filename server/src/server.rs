@@ -12,35 +12,47 @@ use crate::state::ServerState;
 /// Server app that runs with the given parameters
 #[derive(Parser)]
 pub struct Server {
-    /// Path to the file where to store the state of the server to make it persistant
+    /// Path to the file where to store the state of the
+    /// server to make it persistant
     ///
-    /// Defaults to a file erudition/data in the 'data dir' folder
+    /// Defaults to a file erudition/data in the 'data dir'
+    /// folder
     #[arg(short = 'D', long)]
     data_path: Option<PathBuf>,
-    /// Host to use for serving the app, defaults to localhost
+    /// Host to use for serving the app, defaults to
+    /// localhost
     #[arg(short = 'H', long, default_value = "localhost")]
     host: String,
-    /// Path to the file where to store the state of the server to make it persistant
+    /// Path to the file where to store the state of the
+    /// server to make it persistant
     #[arg(short = 'L', long)]
     log_path: Option<PathBuf>,
     /// Port to use for serving the app, defaults to 3000
     ///
-    /// Defaults to a file erudition/log in the 'data dir' folder
+    /// Defaults to a file erudition/log in the 'data dir'
+    /// folder
     #[arg(short = 'P', long, default_value_t = 3000)]
     port: u16,
 }
 
 impl Server {
-    /// Resolves a path in case it is not provided as a CLI argument.
-    fn resolve_path(cli_path: Option<PathBuf>, default_name: &str) -> color_eyre::Result<PathBuf> {
+    /// Resolves a path in case it is not provided as a CLI
+    /// argument.
+    fn resolve_path(
+        cli_path: Option<PathBuf>,
+        default_name: &str,
+    ) -> color_eyre::Result<PathBuf> {
         if let Some(path) = cli_path {
             return Ok(path);
         }
 
         let parent = dirs::data_dir()
-            .context( if cfg!(target_os = "windows")  
-            {"Your environment seems to be broken: FOLDERID_RoamingAppData variable does not exist"} else {
-        "Your environment seems to be broken: HOME variable does not exist"
+            .context(if cfg!(target_os = "windows") {
+                "Your environment seems to be broken: FOLDERID_RoamingAppData \
+                 variable does not exist"
+            } else {
+                "Your environment seems to be broken: HOME variable does not \
+                 exist"
             })
             .map(|path| path.join("erudition"))?;
 
@@ -71,10 +83,16 @@ impl Server {
     }
 
     #[actix_web::main]
-    async fn serve(state: Data<ServerState>, host: String, port: u16) -> io::Result<()> {
-        HttpServer::new(move || register_routes(App::new().app_data(state.clone())))
-            .bind((host, port))?
-            .run()
-            .await
+    async fn serve(
+        state: Data<ServerState>,
+        host: String,
+        port: u16,
+    ) -> io::Result<()> {
+        HttpServer::new(move || {
+            register_routes(App::new().app_data(state.clone()))
+        })
+        .bind((host, port))?
+        .run()
+        .await
     }
 }

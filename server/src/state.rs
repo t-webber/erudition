@@ -58,7 +58,10 @@ impl ServerState {
     }
 
     /// Loads the state from the given file path
-    pub fn load(data_path: PathBuf, log_path: PathBuf) -> color_eyre::Result<Self> {
+    pub fn load(
+        data_path: PathBuf,
+        log_path: PathBuf,
+    ) -> color_eyre::Result<Self> {
         let data_exists = fs::exists(&data_path).with_context(|| {
             format!(
                 "Failed to check existance of {}, do I have access?",
@@ -69,19 +72,19 @@ impl ServerState {
             Some(
                 postcard::from_bytes(
                     fs::read_to_string(&data_path)
-                        .with_context(|| format!("Failed to read {}", data_path.display()))?
+                        .with_context(|| {
+                            format!("Failed to read {}", data_path.display())
+                        })?
                         .as_bytes(),
                 )
-                .with_context(|| format!("File {} has invalid data", data_path.display()))?,
+                .with_context(|| {
+                    format!("File {} has invalid data", data_path.display())
+                })?,
             )
         } else {
             None
         };
-        Ok(Self {
-            items: items.unwrap_or_default(),
-            data_path,
-            log_path,
-        })
+        Ok(Self { items: items.unwrap_or_default(), data_path, log_path })
     }
 
     /// Writes some log to the log file
@@ -89,13 +92,18 @@ impl ServerState {
     pub fn log(&self, msg: &str) {
         eprintln!("{msg}");
         if let Err(err) = fs::write(&self.log_path, msg) {
-            eprintln!("Failed to log error to {}: {err}", self.log_path.display());
+            eprintln!(
+                "Failed to log error to {}: {err}",
+                self.log_path.display()
+            );
         }
     }
 
-    /// Store the current state of the server at the given file path
+    /// Store the current state of the server at the given
+    /// file path
     pub fn store(&self) -> Result<(), ItemError> {
-        let data = postcard::to_allocvec(&self.items).map_err(ItemError::PostCard)?;
+        let data =
+            postcard::to_allocvec(&self.items).map_err(ItemError::PostCard)?;
         fs::write(&self.data_path, data).map_err(ItemError::Io)?;
         Ok(())
     }
