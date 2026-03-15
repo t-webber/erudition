@@ -35,7 +35,7 @@
     clippy::pub_with_shorthand,
     clippy::unseparated_literal_suffix,
     clippy::else_if_without_else,
-    reason = "style only"
+    reason = "bad lints"
 )]
 
 use dioxus::core::Element;
