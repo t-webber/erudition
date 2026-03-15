@@ -4,6 +4,8 @@ use std::sync::Mutex;
 
 use color_eyre::eyre::Context as _;
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 
 use crate::item::Item;
 
@@ -97,9 +99,21 @@ impl ServerState {
         })
     }
 
-    /// Writes some log to the log file
-    #[expect(clippy::print_stderr, reason = "goal of function")]
+    /// Writes some timestamped log to the log file and to the terminal.
     pub fn log(&self, msg: &str) {
+        match OffsetDateTime::now_utc().format(&Rfc3339) {
+            Ok(time) => self.log_no_date(&format!("[{time}] {msg}")),
+            Err(err) => {
+                self.log_no_date(msg);
+                self.log_no_date(&format!("Failed to get date: {err}"));
+            }
+        }
+    }
+
+    /// Writes some log to the log file and to stdout, without a date or
+    /// anything
+    #[expect(clippy::print_stderr, reason = "goal of function")]
+    fn log_no_date(&self, msg: &str) {
         eprintln!("{msg}");
         if let Err(err) = fs::write(&self.log_path, msg) {
             eprintln!(
