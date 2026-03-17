@@ -5,20 +5,20 @@ use actix_web::{App, Error, HttpResponse, get, post, put};
 use crate::item::Item;
 use crate::state::ServerState;
 
-#[get("/list")]
-async fn list(state: Data<ServerState>) -> HttpResponse {
-    state.log("GET: /list");
+#[get("/items")]
+async fn get_items(state: Data<ServerState>) -> HttpResponse {
+    state.log("GET: /items");
     HttpResponse::Ok().json(state.get_items())
 }
 
-#[get("/feedback")]
-async fn get_feedback(state: Data<ServerState>) -> HttpResponse {
-    state.log("GET: /feedback");
-    HttpResponse::Ok().json(state.get_feedback())
+#[post("/item")]
+async fn post_item(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
+    state.log(&format!("POST: /edit: {item:?}"));
+    handle_internal_error(state.add_item(item.into_inner()))
 }
 
-#[put("/edit/{index}")]
-async fn edit(
+#[put("/item/{index}")]
+async fn put_item(
     state: Data<ServerState>,
     index: Path<usize>,
     item: Json<Item>,
@@ -30,16 +30,16 @@ async fn edit(
     )
 }
 
-#[post("/feedback")]
-async fn feedback(data: String, state: Data<ServerState>) -> HttpResponse {
-    state.log(&format!("POST: /add: {data:?}"));
-    handle_internal_error(state.add_feedback(data))
+#[get("/feedback")]
+async fn get_feedback(state: Data<ServerState>) -> HttpResponse {
+    state.log("GET: /feedback");
+    HttpResponse::Ok().json(state.get_feedback())
 }
 
-#[post("/add")]
-async fn add(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
-    state.log(&format!("POST: /add: {item:?}"));
-    handle_internal_error(state.add_item(item.into_inner()))
+#[post("/feedback")]
+async fn post_feedback(data: String, state: Data<ServerState>) -> HttpResponse {
+    state.log(&format!("POST: /add: {data:?}"));
+    handle_internal_error(state.add_feedback(data))
 }
 
 /// Registers all the routes of the app from the given file.
@@ -52,11 +52,11 @@ where T: ServiceFactory<
             Error = Error,
             InitError = (),
         > {
-    app.service(add)
-        .service(list)
-        .service(edit)
-        .service(feedback)
+    app.service(get_items)
+        .service(post_item)
+        .service(put_item)
         .service(get_feedback)
+        .service(post_feedback)
 }
 
 /// From a boolean indicating if an internal error occurence, create an
