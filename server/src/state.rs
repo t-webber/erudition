@@ -9,33 +9,42 @@ use time::format_description::well_known::Rfc3339;
 
 use crate::item::Item;
 
-/// State of the server, accessible from all route handlers
+/// State data that is stored on the disk to be still available after the server
+/// is restarted
 #[derive(Default, Serialize, Deserialize, Debug)]
-pub struct ServerState {
-    /// Path of the file where the items are stored
-    data_path: PathBuf,
+struct StoredData {
     /// List of feedback
     feedback: Mutex<Vec<String>>,
     /// List of current items
     items: Mutex<Vec<Item>>,
+}
+
+/// State of the server, accessible from all route handlers
+#[derive(Default, Serialize, Deserialize, Debug)]
+pub struct ServerState {
+    /// Data that is saved and reloaded
+    data: StoredData,
+    /// Path of the file where the items are stored
+    data_path: PathBuf,
     /// Path of the file where to write logs
     log_path: PathBuf,
 }
 
 impl ServerState {
     /// Save a new feedback
-    pub fn add_feedback(&self, feedback: String) {
-        match self.feedback.lock() {
+    pub fn add_feedback(&self, feedback: String) -> bool {
+        match self.data.feedback.lock() {
             Ok(ref mut list) => list.push(feedback),
             Err(ref mut err) => {
                 err.get_mut().push(feedback);
             }
         }
+        self.store()
     }
 
     /// Adds a new item to the server
     pub fn add_item(&self, item: Item) -> bool {
-        match self.items.lock() {
+        match self.data.items.lock() {
             Ok(ref mut items) => items.push(item),
             Err(ref mut err) => {
                 err.get_mut().push(item);
@@ -52,7 +61,7 @@ impl ServerState {
             })
         };
 
-        match self.items.lock() {
+        match self.data.items.lock() {
             Ok(mut items) => edit(items.get_mut(index)),
             Err(mut err) => edit(err.get_mut().get_mut(index)),
         }
@@ -61,12 +70,12 @@ impl ServerState {
 
     /// Returns the list of feedback
     pub const fn get_feedback(&self) -> &Mutex<Vec<String>> {
-        &self.feedback
+        &self.data.feedback
     }
 
     /// Returns the list of items currently on the server
     pub const fn get_items(&self) -> &Mutex<Vec<Item>> {
-        &self.items
+        &self.data.items
     }
 
     /// Loads the state from the given file path
@@ -80,28 +89,21 @@ impl ServerState {
                 data_path.display()
             )
         })?;
-        let items = if data_exists {
-            Some(
-                postcard::from_bytes(
-                    fs::read_to_string(&data_path)
-                        .with_context(|| {
-                            format!("Failed to read {}", data_path.display())
-                        })?
-                        .as_bytes(),
-                )
-                .with_context(|| {
-                    format!("File {} has invalid data", data_path.display())
-                })?,
+        let data = if data_exists {
+            postcard::from_bytes(
+                fs::read_to_string(&data_path)
+                    .with_context(|| {
+                        format!("Failed to read {}", data_path.display())
+                    })?
+                    .as_bytes(),
             )
+            .with_context(|| {
+                format!("File {} has invalid data", data_path.display())
+            })?
         } else {
-            None
+            StoredData::default()
         };
-        Ok(Self {
-            items: items.unwrap_or_default(),
-            data_path,
-            log_path,
-            feedback: Mutex::new(vec![]),
-        })
+        Ok(Self { data, data_path, log_path })
     }
 
     /// Writes some timestamped log to the log file and to the terminal.
@@ -132,17 +134,17 @@ impl ServerState {
     /// file path
     pub fn store(&self) -> bool {
         self.log("Storing data");
-        postcard::to_allocvec(&self.items)
+        postcard::to_allocvec(&self.data)
             .map_err(|err| {
                 format!(
-                    "Failed to serialise items to \
-                     disk:\nItems:\n{:?}\n\nError:\n{err}",
-                    self.items
+                    "Failed to serialise data to \
+                     disk:\nData:\n{:?}\n\nError:\n{err}",
+                    self.data
                 )
             })
             .and_then(|data| {
                 fs::write(&self.data_path, data).map_err(|err| {
-                    format!("Failed to save items to disk: {err}")
+                    format!("Failed to save data to disk: {err}")
                 })
             })
             .map_err(|msg| self.log(&msg))

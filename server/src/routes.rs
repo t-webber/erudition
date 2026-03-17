@@ -33,8 +33,7 @@ async fn edit(
 #[post("/feedback")]
 async fn feedback(data: String, state: Data<ServerState>) -> HttpResponse {
     state.log(&format!("POST: /add: {data:?}"));
-    state.add_feedback(data);
-    HttpResponse::Ok().into()
+    handle_internal_error(state.add_feedback(data))
 }
 
 #[post("/add")]
