@@ -8,7 +8,13 @@ use crate::state::ServerState;
 #[get("/list")]
 async fn list(state: Data<ServerState>) -> HttpResponse {
     state.log("GET: /list");
-    HttpResponse::Ok().json(state.items())
+    HttpResponse::Ok().json(state.get_items())
+}
+
+#[get("/feedback")]
+async fn get_feedback(state: Data<ServerState>) -> HttpResponse {
+    state.log("GET: /feedback");
+    HttpResponse::Ok().json(state.get_feedback())
 }
 
 #[put("/edit/{index}")]
@@ -25,12 +31,9 @@ async fn edit(
 }
 
 #[post("/feedback")]
-async fn feedback(
-    item: Json<String>,
-    state: Data<ServerState>,
-) -> HttpResponse {
-    state.log(&format!("POST: /add: {item:?}"));
-    state.add_feedback(item.into_inner());
+async fn feedback(data: String, state: Data<ServerState>) -> HttpResponse {
+    state.log(&format!("POST: /add: {data:?}"));
+    state.add_feedback(data);
     HttpResponse::Ok().into()
 }
 
@@ -50,16 +53,20 @@ where T: ServiceFactory<
             Error = Error,
             InitError = (),
         > {
-    app.service(add).service(list).service(edit).service(feedback)
+    app.service(add)
+        .service(list)
+        .service(edit)
+        .service(feedback)
+        .service(get_feedback)
 }
 
 /// From a boolean indicating if an internal error occurence, create an
 /// [`HttpResponse`] that is either `200 OK` or `500 Internal Server Error`.
 fn handle_internal_error(is_internal_error: bool) -> HttpResponse {
     if is_internal_error {
-            HttpResponse::Ok()
-        } else {
-            HttpResponse::InternalServerError()
-        }
-        .into()
+        HttpResponse::Ok()
+    } else {
+        HttpResponse::InternalServerError()
+    }
+    .into()
 }

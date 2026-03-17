@@ -59,8 +59,13 @@ impl ServerState {
         .map(|()| self.store())
     }
 
+    /// Returns the list of feedback
+    pub const fn get_feedback(&self) -> &Mutex<Vec<String>> {
+        &self.feedback
+    }
+
     /// Returns the list of items currently on the server
-    pub const fn items(&self) -> &Mutex<Vec<Item>> {
+    pub const fn get_items(&self) -> &Mutex<Vec<Item>> {
         &self.items
     }
 
@@ -132,7 +137,7 @@ impl ServerState {
                 format!(
                     "Failed to serialise items to \
                      disk:\nItems:\n{:?}\n\nError:\n{err}",
-                    self.items()
+                    self.items
                 )
             })
             .and_then(|data| {
