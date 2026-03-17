@@ -8,22 +8,23 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use crate::item::Item;
+use crate::storage::StoredData;
 
-/// State data that is stored on the disk to be still available after the server
-/// is restarted
-#[derive(Default, Serialize, Deserialize, Debug)]
-struct StoredData {
-    /// List of feedback
-    feedback: Mutex<Vec<String>>,
-    /// List of current items
-    items: Mutex<Vec<Item>>,
+/// Unlocks the mutex, even if poisened, as data can't really be corrupted
+macro_rules! lock {
+    ($data:expr) => {
+        match $data.lock() {
+            Ok(ref mut data) => data,
+            Err(ref mut data) => data.get_mut(),
+        }
+    };
 }
 
 /// State of the server, accessible from all route handlers
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct ServerState {
     /// Data that is saved and reloaded
-    data: StoredData,
+    data: Mutex<StoredData>,
     /// Path of the file where the items are stored
     data_path: PathBuf,
     /// Path of the file where to write logs
@@ -32,50 +33,36 @@ pub struct ServerState {
 
 impl ServerState {
     /// Save a new feedback
+    #[must_use]
     pub fn add_feedback(&self, feedback: String) -> bool {
-        match self.data.feedback.lock() {
-            Ok(ref mut list) => list.push(feedback),
-            Err(ref mut err) => {
-                err.get_mut().push(feedback);
-            }
-        }
+        lock!(self.data).add_feedback(feedback);
         self.store()
     }
 
     /// Adds a new item to the server
+    #[must_use]
     pub fn add_item(&self, item: Item) -> bool {
-        match self.data.items.lock() {
-            Ok(ref mut items) => items.push(item),
-            Err(ref mut err) => {
-                err.get_mut().push(item);
-            }
-        }
+        lock!(self.data).add_item(item);
         self.store()
     }
 
     /// Edit an existant item
+    #[must_use]
     pub fn edit_item(&self, index: usize, item: Item) -> Option<bool> {
-        let edit = |maybe_old: Option<&mut Item>| {
-            maybe_old.map(|old| {
-                *old = item;
-            })
-        };
-
-        match self.data.items.lock() {
-            Ok(mut items) => edit(items.get_mut(index)),
-            Err(mut err) => edit(err.get_mut().get_mut(index)),
-        }
-        .map(|()| self.store())
+        lock!(self.data).edit_item(index, item).map(|old| {
+            self.log(&format!("Replaced item {index}: was {old:?}"));
+            self.store()
+        })
     }
 
     /// Returns the list of feedback
-    pub const fn get_feedback(&self) -> &Mutex<Vec<String>> {
-        &self.data.feedback
+    pub fn get_feedback(&self) -> Vec<String> {
+        lock!(self.data).get_feedback().to_owned()
     }
 
     /// Returns the list of items currently on the server
-    pub const fn get_items(&self) -> &Mutex<Vec<Item>> {
-        &self.data.items
+    pub fn get_items(&self) -> Vec<Item> {
+        lock!(self.data).get_items().to_owned()
     }
 
     /// Loads the state from the given file path
@@ -102,7 +89,8 @@ impl ServerState {
             })?
         } else {
             StoredData::default()
-        };
+        }
+        .into();
         Ok(Self { data, data_path, log_path })
     }
 

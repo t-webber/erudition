@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Item store and returned by the server
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Item {
     /// Multiple choice question
     MultipleChoice {
