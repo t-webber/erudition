@@ -1156,6 +1156,7 @@ dependencies = [
  "dirs",
  "postcard",
  "serde",
+ "serde_json",
  "time",
 ]
 

@@ -64,17 +64,23 @@ macro_rules! app {
 
 macro_rules! get {
     ($app:expr, $uri:expr) => {{
-        let app = $app;
         let req = TestRequest::get().uri($uri).to_request();
-        let res = call_service(&app, req).await;
+        res!($app, req)
+    }};
+}
+
+macro_rules! res {
+    ($app:expr, $req:expr) => {{
+        let app = $app;
+        let res = call_service(&app, $req).await;
         assert!(res.status().is_success());
-        test::read_body(res).await
+        String::from_utf8(test::read_body(res).await.to_vec()).unwrap()
     }};
 }
 
 #[actix_web::test]
 async fn test_feedback() {
-    let folder = target_dir().join("test");
+    let folder = target_dir().join("test").join("test_feedback");
     ensure_not_exists(&folder);
 
     let app = app!(state(&folder));
@@ -88,21 +94,14 @@ async fn test_feedback() {
             .uri("/feedback")
             .set_payload(content.to_owned())
             .to_request();
-        let res = call_service(&app, req).await;
-        assert!(res.status().is_success());
-        let body = test::read_body(res).await;
-        assert_eq!(body, "");
+        assert_eq!(res!(&app, req), "");
     }
 
+    let ser = serde_json::to_string(&contents).unwrap();
     for app in [app, app!(state(&folder))] {
-        assert_eq!(
-            String::from_utf8(get!(app, "/feedback").to_vec()).unwrap(),
-            format!("[\"{}\"]", contents.join("\",\""))
-                .replace('\n', "\\n")
-                .replace('\r', "\\r")
-        );
+        assert_eq!(get!(&app, "/feedback"), ser);
     }
 
     fs::remove_dir_all(&folder).unwrap();
-    assert_eq!(get!(app!(state(&folder)), "/feedback"), "[]");
+    assert_eq!(get!(&app!(state(&folder)), "/feedback"), "[]");
 }
