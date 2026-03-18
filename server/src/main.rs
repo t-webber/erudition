@@ -50,6 +50,8 @@ mod state;
 /// State that is stored to the file system to be persistant after the server is
 /// restarted
 mod storage;
+#[cfg(test)]
+mod tests;
 
 use clap::Parser as _;
 
