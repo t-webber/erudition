@@ -63,9 +63,10 @@ macro_rules! app {
 }
 
 macro_rules! get {
-    ($app:ident, $uri:expr) => {{
+    ($app:expr, $uri:expr) => {{
+        let app = $app;
         let req = TestRequest::get().uri($uri).to_request();
-        let res = call_service(&$app, req).await;
+        let res = call_service(&app, req).await;
         assert!(res.status().is_success());
         test::read_body(res).await
     }};
@@ -78,7 +79,7 @@ async fn test_feedback() {
 
     let app = app!(state(&folder));
 
-    assert_eq!(get!(app, "/feedback"), "[]");
+    assert_eq!(get!(&app, "/feedback"), "[]");
 
     let contents = vec!["Some content\n\u{2240}Heart", "", "\r", "."];
 
@@ -101,4 +102,7 @@ async fn test_feedback() {
                 .replace('\r', "\\r")
         );
     }
+
+    fs::remove_dir_all(&folder).unwrap();
+    assert_eq!(get!(app!(state(&folder)), "/feedback"), "[]");
 }
