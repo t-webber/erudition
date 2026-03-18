@@ -1,0 +1,36 @@
+name: Clippy
+
+on:
+  push:
+    paths:
+      - '**/*.rs'
+      - '.github/workflows/clippy.yml'
+      - 'Cargo.*'
+  pull_request:
+    paths:
+      - '**/*.rs'
+      - 'Cargo.*'
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    clippy:
+        runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            rust: [stable, nightly]
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install Rust
+              uses: actions-rs/toolchain@v1
+              with:
+                toolchain: ${{ matrix.rust }}
+                override: true
+                components: clippy
+
+            - name: Cargo clippy
+              run: cargo clippy --all --all-targets
