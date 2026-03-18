@@ -1,6 +1,5 @@
-use actix_web::dev::{ServiceFactory, ServiceRequest};
-use actix_web::web::{Data, Json, Path};
-use actix_web::{App, Error, HttpResponse, get, post, put};
+use actix_web::web::{Data, Json, Path, ServiceConfig};
+use actix_web::{HttpResponse, get, post, put};
 
 use crate::item::Item;
 use crate::state::ServerState;
@@ -45,18 +44,12 @@ async fn post_feedback(data: String, state: Data<ServerState>) -> HttpResponse {
 /// Registers all the routes of the app from the given file.
 ///
 /// Works better here to not forget to register them.
-pub fn register_routes<T>(app: App<T>) -> App<T>
-where T: ServiceFactory<
-            ServiceRequest,
-            Config = (),
-            Error = Error,
-            InitError = (),
-        > {
+pub fn register_routes(app: &mut ServiceConfig) {
     app.service(get_items)
         .service(post_item)
         .service(put_item)
         .service(get_feedback)
-        .service(post_feedback)
+        .service(post_feedback);
 }
 
 /// From a boolean indicating if an internal error occurence, create an

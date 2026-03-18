@@ -89,7 +89,7 @@ impl Server {
         port: u16,
     ) -> io::Result<()> {
         HttpServer::new(move || {
-            register_routes(App::new().app_data(state.clone()))
+            App::new().app_data(state.clone()).configure(register_routes)
         })
         .bind((host, port))?
         .run()
