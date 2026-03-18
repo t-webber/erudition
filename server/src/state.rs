@@ -1,8 +1,8 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use color_eyre::eyre::Context as _;
+use color_eyre::eyre::{Context as _, ContextCompat as _};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
@@ -91,6 +91,8 @@ impl ServerState {
             StoredData::default()
         }
         .into();
+        Self::mkdir_parent_of(&data_path)?;
+        Self::mkdir_parent_of(&log_path)?;
         Ok(Self { data, data_path, log_path })
     }
 
@@ -116,6 +118,18 @@ impl ServerState {
                 self.log_path.display()
             );
         }
+    }
+
+    /// Creates all parent folders of the given path.
+    fn mkdir_parent_of(path: &Path) -> color_eyre::Result<()> {
+        fs::create_dir_all(
+            path.parent().with_context(|| {
+                format!("Invalid path '{}'", path.display())
+            })?,
+        )
+        .with_context(|| {
+            format!("Failed to create parent of {}", path.display())
+        })
     }
 
     /// Store the current state of the server at the given
