@@ -46,7 +46,7 @@ impl ServerState {
         self.store()
     }
 
-    /// Edit an existant item
+    /// Edit an existing item
     #[must_use]
     pub fn edit_item(&self, index: usize, item: Item) -> Option<bool> {
         lock!(self.data).edit_item(index, item).map(|old| {
@@ -72,7 +72,7 @@ impl ServerState {
     ) -> color_eyre::Result<Self> {
         let data_exists = fs::exists(&data_path).with_context(|| {
             format!(
-                "Failed to check existance of {}, do I have access?",
+                "Failed to check existence of {}, do I have access?",
                 data_path.display()
             )
         })?;

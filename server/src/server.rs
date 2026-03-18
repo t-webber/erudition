@@ -13,7 +13,7 @@ use crate::state::ServerState;
 #[derive(Parser)]
 pub struct Server {
     /// Path to the file where to store the state of the
-    /// server to make it persistant
+    /// server to make it persistent
     ///
     /// Defaults to a file erudition/data in the 'data dir'
     /// folder
@@ -24,7 +24,7 @@ pub struct Server {
     #[arg(short = 'H', long, default_value = "localhost")]
     host: String,
     /// Path to the file where to store the state of the
-    /// server to make it persistant
+    /// server to make it persistent
     #[arg(short = 'L', long)]
     log_path: Option<PathBuf>,
     /// Port to use for serving the app, defaults to 3000

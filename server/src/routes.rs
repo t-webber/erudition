@@ -52,7 +52,7 @@ pub fn register_routes(app: &mut ServiceConfig) {
         .service(post_feedback);
 }
 
-/// From a boolean indicating if an internal error occurence, create an
+/// From a boolean indicating if an internal error occurrence, create an
 /// [`HttpResponse`] that is either `200 OK` or `500 Internal Server Error`.
 fn handle_internal_error(is_internal_error: bool) -> HttpResponse {
     if is_internal_error {

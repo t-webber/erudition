@@ -47,7 +47,7 @@ mod routes;
 mod server;
 /// Server state, shared across route handlers
 mod state;
-/// State that is stored to the file system to be persistant after the server is
+/// State that is stored to the file system to be persistent after the server is
 /// restarted
 mod storage;
 #[cfg(test)]
