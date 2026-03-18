@@ -8,6 +8,7 @@ use actix_web::test::{TestRequest, call_service, init_service};
 use actix_web::web::Data;
 use actix_web::{App, test};
 
+use crate::item::Item;
 use crate::routes::register_routes;
 use crate::state::ServerState;
 
@@ -104,4 +105,32 @@ async fn test_feedback() {
 
     fs::remove_dir_all(&folder).unwrap();
     assert_eq!(get!(&app!(state(&folder)), "/feedback"), "[]");
+}
+
+#[actix_web::test]
+async fn test_items() {
+    let folder = target_dir().join("test").join("test_items");
+    ensure_not_exists(&folder);
+
+    let app = app!(state(&folder));
+
+    assert_eq!(get!(&app, "/items"), "[]");
+
+    let items = vec![Item::MultipleChoice {
+        answers: vec!["a".to_string(), "b".to_string(), "c".to_string()],
+        question: "d".to_string(),
+    }];
+
+    for item in &items {
+        let req = TestRequest::post().uri("/item").set_json(item).to_request();
+        assert_eq!(res!(&app, req), "");
+    }
+
+    let ser = serde_json::to_string(&items).unwrap();
+    for app in [app, app!(state(&folder))] {
+        assert_eq!(get!(app, "/items"), ser);
+    }
+
+    fs::remove_dir_all(&folder).unwrap();
+    assert_eq!(get!(app!(state(&folder)), "/items"), "[]");
 }
