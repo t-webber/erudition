@@ -81,8 +81,8 @@ macro_rules! res {
 }
 
 #[actix_web::test]
-async fn test_feedback() {
-    let folder = target_dir().join("test").join("test_feedback");
+async fn feedback() {
+    let folder = target_dir().join("test").join("feedback");
     ensure_not_exists(&folder);
 
     let app = app!(state(&folder));
@@ -109,8 +109,8 @@ async fn test_feedback() {
 }
 
 #[actix_web::test]
-async fn test_items() {
-    let folder = target_dir().join("test").join("test_items");
+async fn items() {
+    let folder = target_dir().join("test").join("items");
     ensure_not_exists(&folder);
 
     let app = app!(state(&folder));
@@ -157,4 +157,51 @@ async fn test_items() {
 
     fs::remove_dir_all(&folder).unwrap();
     assert_eq!(get!(app!(state(&folder)), "/items"), "[]");
+}
+
+#[actix_web::test]
+async fn server_error() {
+    let folder = target_dir().join("test").join("server_error");
+
+    let app = app!(state(&folder));
+    ensure_not_exists(&folder);
+
+    let req =
+        TestRequest::post().uri("/feedback").set_payload("data").to_request();
+    let res = call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::INTERNAL_SERVER_ERROR);
+}
+
+#[actix_web::test]
+async fn not_found() {
+    let folder = target_dir().join("test").join("not_found");
+
+    let app = app!(state(&folder));
+    ensure_not_exists(&folder);
+
+    let req = TestRequest::get().uri("/not-a-valid-route").to_request();
+    let res = call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::NOT_FOUND);
+}
+
+#[test]
+async fn invalid_data() {
+    let folder = target_dir().join("test").join("invalid_data");
+    let data = folder.join("data");
+    let logs = folder.join("logs");
+
+    fs::create_dir_all(folder).unwrap();
+    fs::write(&data, "invalid data").unwrap();
+
+    let e = ServerState::load(data, logs).unwrap_err();
+    assert!(dbg!(e.to_string()).contains("has invalid data"));
+}
+
+#[test]
+async fn invalid_path() {
+    let folder = target_dir().join("test").join("invalid_path");
+    let logs = folder.join("logs");
+    let data = PathBuf::from("/");
+    let e = ServerState::load(data, logs).unwrap_err();
+    assert_eq!(dbg!(e.to_string()), "Failed to read /");
 }
