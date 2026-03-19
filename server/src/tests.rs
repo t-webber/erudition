@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{env, fs};
 
+use actix_web::http::StatusCode;
 use actix_web::test::{TestRequest, call_service, init_service};
 use actix_web::web::Data;
 use actix_web::{App, test};
@@ -116,15 +117,38 @@ async fn test_items() {
 
     assert_eq!(get!(&app, "/items"), "[]");
 
-    let items = vec![Item::MultipleChoice {
-        answers: vec!["a".to_string(), "b".to_string(), "c".to_string()],
-        question: "d".to_string(),
-    }];
+    macro_rules! item {
+        ($question:literal, $($answer:literal),*) => {
+            Item::MultipleChoice {
+                answers: vec![ $($answer.to_string()),* ],
+                question: $question.to_string(),
+            }
+        };
+    }
+
+    let mut items = vec![
+        item!("a", "b", "c", "d"),
+        item!("question", "answer1", "answer2"),
+        item!("only_question",),
+    ];
 
     for item in &items {
         let req = TestRequest::post().uri("/item").set_json(item).to_request();
         assert_eq!(res!(&app, req), "");
     }
+
+    let new_first = item!("e", "f", "g", "h");
+    items[0] = new_first.clone();
+    let req =
+        TestRequest::put().uri("/item/0").set_json(new_first).to_request();
+    assert_eq!(res!(&app, req), "");
+
+    let req = TestRequest::put()
+        .uri("/item/123")
+        .set_json(item!("a", "b"))
+        .to_request();
+    let res = call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 
     let ser = serde_json::to_string(&items).unwrap();
     for app in [app, app!(state(&folder))] {

@@ -49,7 +49,7 @@ impl ServerState {
     /// Edit an existing item
     #[must_use]
     pub fn edit_item(&self, index: usize, item: Item) -> Option<bool> {
-        lock!(self.data).edit_item(index, item).map(|old| {
+        { lock!(self.data).edit_item(index, item) }.map(|old| {
             self.log(&format!("Replaced item {index}: was {old:?}"));
             self.store()
         })
