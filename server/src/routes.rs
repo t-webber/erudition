@@ -12,7 +12,7 @@ async fn get_items(state: Data<ServerState>) -> HttpResponse {
 
 #[post("/item")]
 async fn post_item(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
-    state.log(&format!("POST: /edit: {item:?}"));
+    state.log(&format!("POST: /item: {item:?}"));
     handle_internal_error(state.add_item(item.into_inner()))
 }
 
@@ -22,7 +22,7 @@ async fn put_item(
     index: Path<usize>,
     item: Json<Item>,
 ) -> HttpResponse {
-    state.log(&format!("POST: /edit/{index}: {item:?}"));
+    state.log(&format!("PUT: /item/{index}: {item:?}"));
     state.edit_item(index.into_inner(), item.into_inner()).map_or_else(
         || HttpResponse::BadRequest().body("Index is not valid"),
         handle_internal_error,
@@ -37,7 +37,7 @@ async fn get_feedback(state: Data<ServerState>) -> HttpResponse {
 
 #[post("/feedback")]
 async fn post_feedback(data: String, state: Data<ServerState>) -> HttpResponse {
-    state.log(&format!("POST: /add: {data:?}"));
+    state.log(&format!("POST: /feedback: {data:?}"));
     handle_internal_error(state.add_feedback(data))
 }
 
