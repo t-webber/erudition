@@ -8,8 +8,8 @@ use actix_web::http::StatusCode;
 use actix_web::test::{TestRequest, call_service, init_service};
 use actix_web::web::Data;
 use actix_web::{App, test};
+use erudition_lib::Item;
 
-use crate::item::Item;
 use crate::routes::register_routes;
 use crate::state::ServerState;
 

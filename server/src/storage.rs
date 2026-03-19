@@ -1,8 +1,7 @@
 use core::mem::replace;
 
+use erudition_lib::Item;
 use serde::{Deserialize, Serialize};
-
-use crate::item::Item;
 
 /// State data that is stored on the disk to be still available after the server
 /// is restarted

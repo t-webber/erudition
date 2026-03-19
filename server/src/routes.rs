@@ -1,7 +1,7 @@
 use actix_web::web::{Data, Json, Path, ServiceConfig};
 use actix_web::{HttpResponse, get, post, put};
+use erudition_lib::Item;
 
-use crate::item::Item;
 use crate::state::ServerState;
 
 #[get("/items")]

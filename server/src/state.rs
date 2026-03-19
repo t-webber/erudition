@@ -3,11 +3,11 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use color_eyre::eyre::Context as _;
+use erudition_lib::Item;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
-use crate::item::Item;
 use crate::storage::StoredData;
 
 /// Unlocks the mutex, even if poisened, as data can't really be corrupted

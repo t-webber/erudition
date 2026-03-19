@@ -1,4 +1,4 @@
-//! Server
+//! A lib to share declarations between server and app.
 #![warn(
     missing_docs,
     warnings,
@@ -36,25 +36,21 @@
     clippy::unseparated_literal_suffix,
     clippy::else_if_without_else,
     clippy::doc_paragraphs_missing_punctuation,
-    reason = "bad lint"
+    reason = "bad lints"
 )]
 
-/// Server routes and their handler
-mod routes;
-/// Server cli and runner
-mod server;
-/// Server state, shared across route handlers
-mod state;
-/// State that is stored to the file system to be persistent after the server is
-/// restarted
-mod storage;
-#[cfg(test)]
-mod tests;
+use serde::{Deserialize, Serialize};
 
-use clap::Parser as _;
-
-use crate::server::Server;
-
-fn main() -> color_eyre::Result<()> {
-    Server::parse().run()
+/// Item store and returned by the server
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Item {
+    /// Multiple choice question
+    MultipleChoice {
+        /// Possible answers, the first is always the
+        /// correct answer
+        answers: Vec<String>,
+        /// Question
+        question: String,
+    },
 }
