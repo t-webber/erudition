@@ -52,9 +52,7 @@ fn ensure_not_exists(folder: &Path) {
 }
 
 fn state(folder: &Path) -> Data<ServerState> {
-    Data::new(
-        ServerState::load(folder.join("data"), folder.join("logs")).unwrap(),
-    )
+    Data::new(ServerState::load(folder.to_path_buf()).unwrap())
 }
 
 macro_rules! app {
@@ -100,9 +98,8 @@ async fn feedback() {
     }
 
     let ser = serde_json::to_string(&contents).unwrap();
-    for app in [app, app!(state(&folder))] {
-        assert_eq!(get!(&app, "/feedback"), ser);
-    }
+    assert_eq!(get!(&app, "/feedback"), ser);
+    assert_eq!(get!(&app!(state(&folder)), "/feedback"), ser);
 
     fs::remove_dir_all(&folder).unwrap();
     assert_eq!(get!(&app!(state(&folder)), "/feedback"), "[]");
@@ -151,9 +148,8 @@ async fn items() {
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 
     let ser = serde_json::to_string(&items).unwrap();
-    for app in [app, app!(state(&folder))] {
-        assert_eq!(get!(app, "/items"), ser);
-    }
+    assert_eq!(get!(app, "/items"), ser);
+    assert_eq!(get!(app!(state(&folder)), "/items"), ser);
 
     fs::remove_dir_all(&folder).unwrap();
     assert_eq!(get!(app!(state(&folder)), "/items"), "[]");
@@ -187,21 +183,10 @@ async fn not_found() {
 #[test]
 async fn invalid_data() {
     let folder = target_dir().join("test").join("invalid_data");
-    let data = folder.join("data");
-    let logs = folder.join("logs");
 
-    fs::create_dir_all(folder).unwrap();
-    fs::write(&data, "invalid data").unwrap();
+    fs::create_dir_all(&folder).unwrap();
+    fs::write(folder.join("data"), "invalid data").unwrap();
 
-    let e = ServerState::load(data, logs).unwrap_err();
+    let e = ServerState::load(folder).unwrap_err();
     assert!(dbg!(e.to_string()).contains("has invalid data"));
-}
-
-#[test]
-async fn invalid_path() {
-    let folder = target_dir().join("test").join("invalid_path");
-    let logs = folder.join("logs");
-    let data = PathBuf::from("/");
-    let e = ServerState::load(data, logs).unwrap_err();
-    assert_eq!(dbg!(e.to_string()), "Failed to read /");
 }

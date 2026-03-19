@@ -1,8 +1,8 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Mutex;
 
-use color_eyre::eyre::{Context as _, ContextCompat as _};
+use color_eyre::eyre::Context as _;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
@@ -20,15 +20,23 @@ macro_rules! lock {
     };
 }
 
+/// Name of the file within the state folder where the persistent data of the
+/// state is stored.
+const DATA: &str = "data";
+/// Name of the file within the state folder where writes occur, to prevent
+/// corrupting the file.
+const TEMP_DATA: &str = "data.temp";
+/// Name of the file within the state folder where the logs are written.
+const LOGS: &str = "logs";
+
 /// State of the server, accessible from all route handlers
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct ServerState {
     /// Data that is saved and reloaded
     data: Mutex<StoredData>,
-    /// Path of the file where the items are stored
-    data_path: PathBuf,
-    /// Path of the file where to write logs
-    log_path: PathBuf,
+    /// Path of the folder where data is written (persistent state, logs,
+    /// temporary files, etc.)
+    path: PathBuf,
 }
 
 impl ServerState {
@@ -55,6 +63,11 @@ impl ServerState {
         })
     }
 
+    /// Returns the path to a data file
+    fn file(&self, name: &str) -> PathBuf {
+        self.path.join(name)
+    }
+
     /// Returns the list of feedback
     pub fn get_feedback(&self) -> Vec<String> {
         lock!(self.data).get_feedback().to_owned()
@@ -66,10 +79,8 @@ impl ServerState {
     }
 
     /// Loads the state from the given file path
-    pub fn load(
-        data_path: PathBuf,
-        log_path: PathBuf,
-    ) -> color_eyre::Result<Self> {
+    pub fn load(path: PathBuf) -> color_eyre::Result<Self> {
+        let data_path = path.join(DATA);
         let data_exists = fs::exists(&data_path).with_context(|| {
             format!(
                 "Failed to check existence of {}, do I have access?",
@@ -91,9 +102,10 @@ impl ServerState {
             StoredData::default()
         }
         .into();
-        Self::mkdir_parent_of(&data_path)?;
-        Self::mkdir_parent_of(&log_path)?;
-        Ok(Self { data, data_path, log_path })
+        fs::create_dir_all(&path).with_context(|| {
+            format!("Failed to create parent of {}", path.display())
+        })?;
+        Ok(Self { data, path })
     }
 
     /// Writes some timestamped log to the log file and to the terminal.
@@ -111,25 +123,11 @@ impl ServerState {
     /// anything
     #[expect(clippy::print_stderr, reason = "goal of function")]
     fn log_no_date(&self, msg: &str) {
+        let log_path = self.file(LOGS);
         eprintln!("{msg}");
-        if let Err(err) = fs::write(&self.log_path, msg) {
-            eprintln!(
-                "Failed to log error to {}: {err}",
-                self.log_path.display()
-            );
+        if let Err(err) = fs::write(&log_path, msg) {
+            eprintln!("Failed to log error to {}: {err}", log_path.display());
         }
-    }
-
-    /// Creates all parent folders of the given path.
-    fn mkdir_parent_of(path: &Path) -> color_eyre::Result<()> {
-        fs::create_dir_all(
-            path.parent().with_context(|| {
-                format!("Invalid path '{}'", path.display())
-            })?,
-        )
-        .with_context(|| {
-            format!("Failed to create parent of {}", path.display())
-        })
     }
 
     /// Store the current state of the server at the given
@@ -145,9 +143,16 @@ impl ServerState {
                 )
             })
             .and_then(|data| {
-                fs::write(&self.data_path, data).map_err(|err| {
-                    format!("Failed to save data to disk: {err}")
+                fs::write(self.file(TEMP_DATA), data).map_err(|err| {
+                    format!("Failed to save data to {TEMP_DATA}: {err}")
                 })
+            })
+            .and_then(|()| {
+                fs::rename(self.file(TEMP_DATA), self.file(DATA)).map_err(
+                    |err| {
+                        format!("Failed to move {TEMP_DATA} to {DATA}: {err}")
+                    },
+                )
             })
             .map_err(|msg| self.log(&msg))
             .is_ok()
