@@ -40,7 +40,9 @@
 
 use dioxus::core::Element;
 use dioxus::dioxus_core;
-use dioxus::prelude::{component, rsx};
+use dioxus::hooks::use_signal;
+use dioxus::prelude::*;
+use erudition_lib::Item;
 
 fn main() {
     dioxus::launch(App);
@@ -48,5 +50,18 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    rsx! { "Hello, world!" }
+    let mut item = use_signal(|| Item::MultipleChoice {
+        answers: vec![],
+        question: "a question".into(),
+    });
+
+    let question = item.cloned().question();
+
+    rsx! {
+        button {
+            onclick: move |_|
+                    *item.write() = Item::MultipleChoice { answers: vec![], question: "an other one".to_owned() },
+            "{question}"
+        }
+    }
 }

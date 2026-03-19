@@ -29,6 +29,7 @@
     clippy::pattern_type_mismatch,
     clippy::blanket_clippy_restriction_lints,
     clippy::missing_trait_methods,
+    clippy::missing_inline_in_public_items,
     clippy::question_mark_used,
     clippy::mod_module_files,
     clippy::module_name_repetitions,
@@ -53,4 +54,14 @@ pub enum Item {
         /// Question
         question: String,
     },
+}
+
+impl Item {
+    /// Returns the question that corresponds to the this item.
+    #[must_use]
+    pub fn question(self) -> String {
+        match self {
+            Self::MultipleChoice { question, .. } => question,
+        }
+    }
 }

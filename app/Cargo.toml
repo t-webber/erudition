@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 dioxus = "0.7.3"
 dioxus-signals = "0.7.3"
+erudition-lib = { version = "0.1.0", path = "../lib" }
