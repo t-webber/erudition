@@ -790,6 +790,9 @@ dependencies = [
 [[package]]
 name = "dev"
 version = "0.1.0"
+dependencies = [
+ "clap",
+]
 
 [[package]]
 name = "digest"
