@@ -1,5 +1,5 @@
 //! An android app.
-#![warn(
+#![deny(
     missing_docs,
     warnings,
     deprecated_safe,
