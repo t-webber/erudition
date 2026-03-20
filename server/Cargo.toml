@@ -12,6 +12,7 @@ serde.workspace = true
 postcard = { version = "1.1.3", features = ["alloc"] }
 time = "0.3.47"
 erudition-lib = { version = "0.1.0", path = "../lib" }
+actix-cors = "0.7.1"
 
 [dev-dependencies]
 serde_json = "1.0.149"
