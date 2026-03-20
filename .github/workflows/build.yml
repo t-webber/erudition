@@ -26,6 +26,13 @@ jobs:
             - name: Checkout repository
               uses: actions/checkout@v4
 
+            - name: Restore target
+              uses: actions/cache@v5
+              with:
+                path: target
+                key: build-target
+                restore-keys: build-target
+
             - name: Install Rust
               uses: actions-rs/toolchain@v1
               with:
