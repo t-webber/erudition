@@ -1,5 +1,5 @@
 //! A lib to share declarations between server and app.
-#![warn(
+#![deny(
     missing_docs,
     warnings,
     deprecated_safe,

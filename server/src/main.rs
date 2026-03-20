@@ -1,5 +1,5 @@
 //! Server
-#![warn(
+#![deny(
     missing_docs,
     warnings,
     deprecated_safe,

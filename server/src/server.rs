@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use std::{fs, io};
 
 use actix_cors::Cors;
-use actix_web::http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, Header};
 use actix_web::web::Data;
 use actix_web::{App, HttpServer};
 use clap::Parser;
