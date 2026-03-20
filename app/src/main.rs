@@ -35,6 +35,7 @@
     clippy::pub_with_shorthand,
     clippy::unseparated_literal_suffix,
     clippy::else_if_without_else,
+    clippy::integer_division_remainder_used,
     reason = "bad lints"
 )]
 
@@ -48,20 +49,47 @@ fn main() {
     dioxus::launch(App);
 }
 
+/// Fetches the items from the server.
+async fn fetch_items() -> Option<Vec<Item>> {
+    reqwest::get("http://localhost:3000/items").await.ok()?.json().await.ok()
+}
+
 #[component]
 fn App() -> Element {
-    let mut item = use_signal(|| Item::MultipleChoice {
-        answers: vec![],
-        question: "a question".into(),
-    });
+    let default_item =
+        Item::MultipleChoice { answers: vec![], question: "a question".into() };
 
-    let question = item.cloned().question();
+    let mut refetch = use_signal(|| true);
+    let items = use_resource(move || async move {
+        refetch();
+        fetch_items().await
+    });
+    let mut index = use_signal(|| 0usize);
+
+    let question = items
+        .read()
+        .clone()
+        .unwrap_or_default()
+        .unwrap_or_default()
+        .get(index())
+        .unwrap_or(&default_item)
+        .clone()
+        .question();
+    let len =
+        items.read().clone().unwrap_or_default().unwrap_or_default().len();
 
     rsx! {
         button {
-            onclick: move |_|
-                    *item.write() = Item::MultipleChoice { answers: vec![], question: "an other one".to_owned() },
-            "{question}"
+            onclick: move |_| if len != 0 {*index.write() = (index() + 1usize) % len},
+            "next"
+        }
+        button {
+            onclick: move |_| *refetch.write()= true,
+            "refetch"
+        }
+        div {
+            "{index}th question: {question}"
+
         }
     }
 }
