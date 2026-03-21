@@ -1,9 +1,10 @@
 use core::time::Duration;
+use std::io::{BufRead as _, BufReader};
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::thread::sleep;
 
-use color_eyre::eyre::{Context as _, bail, eyre};
+use color_eyre::eyre::{Context as _, ContextCompat as _, bail, eyre};
 
 use crate::cli::Action;
 
@@ -73,9 +74,51 @@ impl Runner {
     }
 
     /// Listens to the logs and prettify them
-    #[expect(clippy::todo, reason = "todo")]
+    #[expect(
+        clippy::arithmetic_side_effects,
+        clippy::string_slice,
+        clippy::print_stdout,
+        reason = "i don't care"
+    )]
     fn run_logs(&self) -> Result {
-        todo!()
+        let mut child = Command::new("adb")
+            .arg("logcat")
+            .current_dir(&self.pwd)
+            .stdout(Stdio::piped())
+            .spawn()
+            .context("Failed to run `adb logcat`")?;
+        let reader = BufReader::new(
+            child.stdout.take().context("Failed to reach stdout of adb")?,
+        );
+        for next in reader.lines() {
+            let line = next.context("Failed to read output of adb")?;
+
+            if line.contains("RustStdoutStderr")
+                && !line.contains("s_glBindAttribLocation")
+                && let Some(datetime_end) =
+                    line.find(' ').and_then(|date_end| {
+                        line[date_end + 1..]
+                            .find(' ')
+                            .map(|relative| relative + date_end + 1)
+                    })
+                && let Some(begin) = line[datetime_end + 1..]
+                    .find("I RustStdoutStderr: ")
+                    .map(|begin| {
+                        datetime_end + 1 + begin + "I RustStdoutStderr: ".len()
+                    })
+            {
+                print!("\x1b[37m{}\x1b[0m ", &line[0..datetime_end]);
+                if line[begin..].chars().next().is_some_and(|ch| ch == '[')
+                    && let Some(end) = line[begin..].find(']')
+                {
+                    let (scope, text) = line[begin..].split_at(end + 1);
+                    println!("\x1b[33m{scope}\x1b[0m{text}");
+                } else {
+                    println!("{}", &line[begin..]);
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Runs a tmux 'send-keys' command with nice error handling
