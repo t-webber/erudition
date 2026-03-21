@@ -4,12 +4,10 @@ on:
   push:
     paths:
       - '**/*.rs'
-      - 'README.md'
       - '.github/workflows/rustdoc.yml'
   pull_request:
     paths:
       - '**/*.rs'
-      - 'README.md'
       - '.github/workflows/rustdoc.yml'
 
 env:
