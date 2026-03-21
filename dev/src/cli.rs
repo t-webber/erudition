@@ -13,7 +13,7 @@ macro_rules! first_true {
             $($variant,)*
         }
         impl Action {
-            const VALUES: &[&str] = &[$(stringify!($variant)),*];
+            const VALUES: &[&str] = &[$(stringify!($flag)),*];
 
             const fn from_cli(cli: &Cli) -> Self {
                 $( if cli.$flag { return Self::$variant; } )*
