@@ -56,5 +56,6 @@ use clap::Parser as _;
 use crate::server::Server;
 
 fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
     Server::parse().run()
 }
