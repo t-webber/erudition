@@ -32,8 +32,8 @@ jobs:
                 path: |
                   target
                   ~/.cargo
-                key: build-target
-                restore-keys: build-target
+                key: build-target-${{ matrix.rust }}
+                restore-keys: build-target-${{ matrix.rust }}
 
             - name: Install Rust
               uses: actions-rs/toolchain@v1

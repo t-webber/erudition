@@ -31,8 +31,8 @@ jobs:
                 path: |
                   target
                   ~/.cargo
-                key: clippy-target
-                restore-keys: clippy-target
+                key: clippy-target-${{ matrix.rust }}
+                restore-keys: clippy-target-${{ matrix.rust }}
 
             - name: Install Rust
               uses: actions-rs/toolchain@v1

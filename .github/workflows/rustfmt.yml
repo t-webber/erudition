@@ -29,8 +29,8 @@ jobs:
                 path: |
                   target
                   ~/.cargo
-                key: fmt-target
-                restore-keys: fmt-target
+                key: fmt-target-${{ matrix.rust }}
+                restore-keys: fmt-target-${{ matrix.rust }}
 
             - name: Install Rust
               uses: actions-rs/toolchain@v1

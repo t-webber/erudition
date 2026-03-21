@@ -30,8 +30,8 @@ jobs:
                 path: |
                   target
                   ~/.cargo
-                key: doc-target
-                restore-keys: doc-target
+                key: doc-target-${{ matrix.rust }}
+                restore-keys: doc-target-${{ matrix.rust }}
 
             - name: Install Rust
               uses: actions-rs/toolchain@v1
