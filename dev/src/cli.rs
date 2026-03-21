@@ -13,6 +13,8 @@ macro_rules! first_true {
             $($variant,)*
         }
         impl Action {
+            const VALUES: &[&str] = &[$(stringify!($variant)),*];
+
             const fn from_cli(cli: &Cli) -> Self {
                 $( if cli.$flag { return Self::$variant; } )*
                 Self::All
@@ -35,7 +37,7 @@ first_true! {
 #[expect(clippy::struct_excessive_bools, reason = "cli flags")]
 #[command(group(
     ArgGroup::new("scope")
-        .args(["app", "logs", "open", "server", "kill", "delay"])
+        .args(Action::VALUES)
         .multiple(false)
 ))]
 #[command(group(
@@ -47,11 +49,6 @@ pub struct Cli {
     /// Run only the app
     #[arg(short, long, default_value_t = false)]
     app: bool,
-    /// Change the delay between launching the app and opening the logs,
-    /// needed to ensure app is running before pulling the `adb`
-    /// logs (in ms)
-    #[arg(short, long, default_value_t = 2000)]
-    delay: u64,
     /// Kill the running tmux session
     #[arg(short, long, default_value_t = false)]
     kill: bool,
@@ -75,7 +72,6 @@ impl Cli {
     pub fn into_runner(self) -> color_eyre::Result<Runner> {
         Ok(Runner {
             action: Action::from_cli(&self),
-            logs_delay: self.delay,
             session: self.name,
             this: current_exe()
                 .context("failed to get current executable path")?,

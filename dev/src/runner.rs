@@ -1,8 +1,6 @@
-use core::time::Duration;
 use std::io::{BufRead as _, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::thread::sleep;
 
 use color_eyre::eyre::{Context as _, ContextCompat as _, bail, eyre};
 
@@ -15,8 +13,6 @@ type Result<T = ()> = color_eyre::Result<T>;
 pub struct Runner {
     /// Action to be run
     pub action: Action,
-    /// Change the delay between launching the app and opening the logs
-    pub logs_delay: u64,
     /// Path to the current working directory
     pub pwd: PathBuf,
     /// Name of the tmux session
@@ -65,8 +61,6 @@ impl Runner {
 
         self.tmux(&["new-window", "-t", &self.session, "-n", "server"])?;
         self.send_keys("server")?;
-
-        sleep(Duration::from_millis(self.logs_delay));
 
         self.tmux(&["new-window", "-t", &self.session, "-n", "logs"])?;
         self.send_keys("logs")?;
