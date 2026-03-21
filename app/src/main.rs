@@ -51,7 +51,7 @@ fn main() {
 
 /// Fetches the items from the server.
 async fn fetch_items() -> Option<Vec<Item>> {
-    reqwest::get("http://localhost:3000/items").await.ok()?.json().await.ok()
+    reqwest::get("http://10.0.2.2:3000/items").await.ok()?.json().await.ok()
 }
 
 #[component]
