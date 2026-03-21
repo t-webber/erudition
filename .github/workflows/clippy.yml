@@ -28,7 +28,9 @@ jobs:
             - name: Restore target
               uses: actions/cache@v5
               with:
-                path: target
+                path: |
+                  target
+                  ~/.cargo
                 key: clippy-target
                 restore-keys: clippy-target
 
