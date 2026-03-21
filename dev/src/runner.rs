@@ -51,7 +51,8 @@ impl Runner {
                 self.cmd("dx", &["serve", "-p", "erudition-app", "--android"]),
             Action::Kill => self.tmux(&["kill-session", "-t", &self.session]),
             Action::Logs => self.run_logs(),
-            Action::Open => self.tmux(&["attach-session", "-t", &self.session]),
+            Action::Open =>
+                self.cmd("tmux", &["attach-session", "-t", &self.session]),
             Action::Server =>
                 self.cmd("cargo", &["run", "-p", "erudition-server"]),
         }
@@ -67,10 +68,10 @@ impl Runner {
 
         sleep(Duration::from_millis(self.logs_delay));
 
-        self.tmux(&["new-window", "-t", &self.session, "-n", "log"])?;
-        self.send_keys("log")?;
+        self.tmux(&["new-window", "-t", &self.session, "-n", "logs"])?;
+        self.send_keys("logs")?;
 
-        self.tmux(&["attach-session", "-t", &self.session])
+        self.cmd("tmux", &["attach-session", "-t", &self.session])
     }
 
     /// Listens to the logs and prettify them
