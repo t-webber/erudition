@@ -45,6 +45,10 @@ use dioxus::hooks::use_signal;
 use dioxus::prelude::*;
 use erudition_lib::Item;
 
+/// Predefined Tailwind CSS classes and styles.
+#[expect(clippy::volatile_composites, reason = "foreign macro")]
+const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
+
 /// Cross-platform HOST ip.
 const HOST: &str =
     if cfg!(target_os = "android") { "10.0.2.2" } else { "127.0.0.1" };
@@ -88,18 +92,20 @@ fn App() -> Element {
         items.read().clone().unwrap_or_default().unwrap_or_default().len();
 
     rsx! {
+        document::Link { rel: "stylesheet", href: TAILWIND_CSS }
+
         button {
             onclick: move |_| if len != 0 {*index.write() = (index() + 1usize) % len},
             "next"
         }
         button {
+            class: "bg-blue-300 p-1 m-1",
             onclick: move |_| *refetch.write()= true,
             "refetch"
         }
         div {
-            class: "bg-black",
-            "{question}"
-
+            class: "bg-red-300 p-2 border-red-500 b-8 border w-fit",
+            p { "{question}" }
         }
     }
 }
