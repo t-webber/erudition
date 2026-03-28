@@ -1,6 +1,7 @@
+use core::fmt::{self, Display};
 use std::env::{current_dir, current_exe};
 
-use clap::{ArgGroup, Parser};
+use clap::{ArgGroup, Parser, ValueEnum};
 use color_eyre::eyre::Context as _;
 
 use crate::runner::Runner;
@@ -61,6 +62,9 @@ pub struct Cli {
     /// Open the running tmux session
     #[arg(short, long, default_value_t = false)]
     open: bool,
+    /// Platform on which to run the app
+    #[arg(short, long, default_value = "desktop")]
+    platform: Platform,
     /// Run only the server
     #[arg(short, long, default_value_t = false)]
     server: bool,
@@ -77,6 +81,29 @@ impl Cli {
                 .context("failed to get current executable path")?,
             pwd: current_dir()
                 .context("Failed to get current working directory")?,
+            platform: self.platform,
         })
+    }
+}
+
+/// Platform on which to run the app
+#[derive(Debug, ValueEnum, Copy, Clone)]
+pub enum Platform {
+    /// Serve the app in an android emulator
+    Android,
+    /// Serve the app natively
+    Desktop,
+    /// Serve the app in the browser
+    Web,
+}
+
+impl Display for Platform {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Android => "android",
+            Self::Desktop => "desktop",
+            Self::Web => "web",
+        }
+        .fmt(f)
     }
 }
