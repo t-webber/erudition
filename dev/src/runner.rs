@@ -62,15 +62,15 @@ impl Runner {
 
     /// Runs the CLI
     fn run_all(self) -> Result {
-        self.tmux(&["new-session", "-d", "-s", &self.session, "-n", "app"])?;
-        self.send_keys("app")?;
+        self.tmux(&["new-session", "-d", "-s", &self.session, "-n", "main"])?;
+        self.send_keys("app", 0)?;
 
-        self.tmux(&["new-window", "-t", &self.session, "-n", "server"])?;
-        self.send_keys("server")?;
+        self.tmux(&["split-window", "-h", "-t", &self.session])?;
+        self.send_keys("server", 1)?;
 
         if matches!(self.platform, Platform::Android) {
-            self.tmux(&["new-window", "-t", &self.session, "-n", "logs"])?;
-            self.send_keys("logs")?;
+            self.tmux(&["split-window", "-v", "-t", &self.session])?;
+            self.send_keys("logs", 2)?;
         }
 
         self.cmd("tmux", &["attach-session", "-t", &self.session])
@@ -125,15 +125,16 @@ impl Runner {
     }
 
     /// Runs a tmux 'send-keys' command with nice error handling
-    fn send_keys(&self, window: &str) -> Result {
+    fn send_keys(&self, window: &str, id: u32) -> Result {
         self.tmux(&[
             "send-keys",
             "-t",
-            &format!("{}:{window}", self.session),
+            &id.to_string(),
             &format!(
-                "builtin cd {} && {} --{window}",
+                "builtin cd {} && {} --{window} -p {}",
                 self.pwd.display(),
-                self.this.display()
+                self.this.display(),
+                self.platform
             ),
             "C-m",
         ])

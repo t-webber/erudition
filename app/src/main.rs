@@ -88,7 +88,8 @@ fn App() -> Element {
             "refetch"
         }
         div {
-            "{index}th question: {question}"
+            class: "bg-black",
+            "{question}"
 
         }
     }
