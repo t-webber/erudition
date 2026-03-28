@@ -70,6 +70,12 @@ impl Runner {
             tmux.run(&dev("logs"))?;
         }
 
+        tmux.vsplit()?;
+        tmux.run(
+            "tailwind -i ./app/assets/input.css -o ./app/assets/tailwind.css \
+             --watch",
+        )?;
+
         tmux.attach()?;
 
         Ok(())
