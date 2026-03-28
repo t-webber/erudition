@@ -45,13 +45,22 @@ use dioxus::hooks::use_signal;
 use dioxus::prelude::*;
 use erudition_lib::Item;
 
+/// Cross-platform HOST ip.
+const HOST: &str =
+    if cfg!(target_os = "android") { "10.0.2.2" } else { "127.0.0.1" };
+
 fn main() {
     dioxus::launch(App);
 }
 
 /// Fetches the items from the server.
 async fn fetch_items() -> Option<Vec<Item>> {
-    reqwest::get("http://10.0.2.2:3000/items").await.ok()?.json().await.ok()
+    reqwest::get(format!("http://{HOST}:3000/items"))
+        .await
+        .ok()?
+        .json()
+        .await
+        .ok()
 }
 
 #[component]
