@@ -42,4 +42,5 @@ jobs:
                 components: clippy
 
             - name: Cargo clippy
+              run: touch app/assets/tailwind.css
               run: cargo clippy --all --all-targets

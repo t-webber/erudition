@@ -42,4 +42,5 @@ jobs:
                 override: true
 
             - name: Cargo build
+              run: touch app/assets/tailwind.css
               run: cargo build --release --all-targets

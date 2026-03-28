@@ -40,4 +40,5 @@ jobs:
                 override: true
 
             - name: Run tests
+              run: touch app/assets/tailwind.css
               run: cargo test --all-targets

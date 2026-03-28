@@ -40,4 +40,5 @@ jobs:
                 override: true
 
             - name: Check documentation
+              run: touch app/assets/tailwind.css
               run: RUSTDOCFLAGS="-D warnings" cargo doc --document-private-items --all --release

@@ -40,4 +40,5 @@ jobs:
                 components: rustfmt
 
             - name: Check formatting
+              run: touch app/assets/tailwind.css
               run: cargo fmt -- --check
