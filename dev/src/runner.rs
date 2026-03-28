@@ -2,12 +2,11 @@ use std::io::{BufRead as _, BufReader};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-use color_eyre::eyre::{Context as _, ContextCompat as _, bail, eyre};
+use color_eyre::eyre::{Context as _, ContextCompat as _};
 
 use crate::cli::{Action, Platform};
-
-/// Result type for this file
-type Result<T = ()> = color_eyre::Result<T>;
+use crate::tmux::Tmux;
+use crate::{Result, cmd};
 
 /// Runner for tmux
 pub struct Runner {
@@ -16,7 +15,7 @@ pub struct Runner {
     /// Platform on which to run the app
     pub platform: Platform,
     /// Path to the current working directory
-    pub pwd: PathBuf,
+    pub root_path: PathBuf,
     /// Name of the tmux session
     pub session: String,
     /// Full path to the current binary being run
@@ -24,56 +23,56 @@ pub struct Runner {
 }
 
 impl Runner {
-    /// Runs a command without capturing the output
-    fn cmd(&self, prog: &str, args: &[&str]) -> Result {
-        let cmd = || format!("`{prog} {}`", args.join(" "));
-        if !Command::new(prog)
-            .args(args)
-            .current_dir(&self.pwd)
-            .spawn()
-            .with_context(|| format!("Failed to run {}", cmd()))?
-            .wait()
-            .with_context(|| format!("{} failed, check its logs above", cmd()))?
-            .success()
-        {
-            bail!("{} failed, check its logs above", cmd())
-        }
-        Ok(())
-    }
-
     /// Runner entry point to execute what was intended by the user
     pub fn run(self) -> Result {
         match self.action {
             Action::All => self.run_all(),
-            Action::App => self.cmd("dx", &[
-                "serve",
-                "-p",
-                "erudition-app",
-                &format!("--{}", self.platform),
-            ]),
-            Action::Kill => self.tmux(&["kill-session", "-t", &self.session]),
+            Action::App => cmd(
+                "dx",
+                &[
+                    "serve",
+                    "-p",
+                    "erudition-app",
+                    &format!("--{}", self.platform),
+                ],
+                &self.root_path,
+            ),
+            Action::Kill => Tmux::new(self.session, self.root_path).kill(),
             Action::Logs => self.run_logs(),
-            Action::Open =>
-                self.cmd("tmux", &["attach-session", "-t", &self.session]),
-            Action::Server =>
-                self.cmd("cargo", &["run", "-p", "erudition-server"]),
+            Action::Open => cmd(
+                "tmux",
+                &["attach-session", "-t", &self.session],
+                &self.root_path,
+            ),
+            Action::Server => cmd(
+                "cargo",
+                &["run", "-p", "erudition-server"],
+                &self.root_path,
+            ),
         }
     }
 
     /// Runs the CLI
     fn run_all(self) -> Result {
-        self.tmux(&["new-session", "-d", "-s", &self.session, "-n", "main"])?;
-        self.send_keys("app", 0)?;
+        let this = self.this.display();
+        let dev = |what| format!("{this} --{what} -p {}", self.platform);
 
-        self.tmux(&["split-window", "-h", "-t", &self.session])?;
-        self.send_keys("server", 1)?;
+        let mut tmux = Tmux::new(self.session, self.root_path);
+
+        tmux.create()?;
+        tmux.run(&dev("app"))?;
+
+        tmux.split()?;
+        tmux.run(&dev("server"))?;
 
         if matches!(self.platform, Platform::Android) {
-            self.tmux(&["split-window", "-v", "-t", &self.session])?;
-            self.send_keys("logs", 2)?;
+            tmux.vsplit()?;
+            tmux.run(&dev("logs"))?;
         }
 
-        self.cmd("tmux", &["attach-session", "-t", &self.session])
+        tmux.attach()?;
+
+        Ok(())
     }
 
     /// Listens to the logs and prettify them
@@ -86,7 +85,7 @@ impl Runner {
     fn run_logs(&self) -> Result {
         let mut child = Command::new("adb")
             .arg("logcat")
-            .current_dir(&self.pwd)
+            .current_dir(&self.root_path)
             .stdout(Stdio::piped())
             .spawn()
             .context("Failed to run `adb logcat`")?;
@@ -122,47 +121,5 @@ impl Runner {
             }
         }
         Ok(())
-    }
-
-    /// Runs a tmux 'send-keys' command with nice error handling
-    fn send_keys(&self, window: &str, id: u32) -> Result {
-        self.tmux(&[
-            "send-keys",
-            "-t",
-            &id.to_string(),
-            &format!(
-                "builtin cd {} && {} --{window} -p {}",
-                self.pwd.display(),
-                self.this.display(),
-                self.platform
-            ),
-            "C-m",
-        ])
-    }
-
-    /// Runs a command with nice error handling
-    fn tmux(&self, args: &[&str]) -> Result {
-        let cmd = || format!("Failed to run `tmux {}`", args.join(" "));
-
-        let out = Command::new("tmux")
-            .args(args)
-            .current_dir(&self.pwd)
-            .output()
-            .wrap_err_with(cmd)?;
-
-        if out.status.success() {
-            return Ok(());
-        }
-
-        let stderr = String::from_utf8_lossy(&out.stderr);
-        if stderr.starts_with("duplicate session: ") {
-            Err(eyre!("{stderr}")).wrap_err(cmd()).wrap_err(
-                "A session is already running with that name.\nOpen it with \
-                 `--open`, kill it with `--kill` or use a different name with \
-                 `--session`",
-            )
-        } else {
-            Err(eyre!("{stderr}").wrap_err(cmd()))
-        }
     }
 }

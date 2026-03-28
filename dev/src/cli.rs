@@ -1,8 +1,9 @@
 use core::fmt::{self, Display};
-use std::env::{current_dir, current_exe};
+use std::env::current_exe;
+use std::path::Path;
 
 use clap::{ArgGroup, Parser, ValueEnum};
-use color_eyre::eyre::Context as _;
+use color_eyre::eyre::{Context as _, ContextCompat as _};
 
 use crate::runner::Runner;
 
@@ -74,13 +75,18 @@ impl Cli {
     /// Returns the [`Runner`] with the current settings to execute what was
     /// intended by the user.
     pub fn into_runner(self) -> color_eyre::Result<Runner> {
+        let this =
+            current_exe().context("failed to get current executable path")?;
         Ok(Runner {
             action: Action::from_cli(&self),
             session: self.name,
-            this: current_exe()
-                .context("failed to get current executable path")?,
-            pwd: current_dir()
-                .context("Failed to get current working directory")?,
+            root_path: this
+                .parent()
+                .and_then(Path::parent)
+                .and_then(Path::parent)
+                .context("failed to project's root path")?
+                .to_path_buf(),
+            this,
             platform: self.platform,
         })
     }
