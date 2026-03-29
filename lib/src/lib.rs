@@ -40,6 +40,8 @@
     reason = "bad lints"
 )]
 
+use core::fmt;
+
 use serde::{Deserialize, Serialize};
 
 /// Defines new types
@@ -96,4 +98,15 @@ impl Item {
     }
 }
 
-newtype!(SessionId, Username, Hashed, Plain);
+newtype!(SessionId, Username, Hashed);
+
+/// Newtype for Plain
+#[derive(PartialEq, Eq, Hash, Serialize, Deserialize, Clone)]
+#[expect(clippy::exhaustive_structs, reason = "newtype")]
+pub struct Plain(pub Box<str>);
+
+impl fmt::Debug for Plain {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("Plain").field(&"*****").finish()
+    }
+}

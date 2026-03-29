@@ -194,7 +194,7 @@ async fn invalid_data() {
     fs::write(folder.join("data"), "invalid data").unwrap();
 
     let e = ServerState::load(folder).unwrap_err();
-    assert!(dbg!(e.to_string()).contains("has invalid data"));
+    assert!(e.to_string().contains("has invalid data"));
 }
 
 #[test]
