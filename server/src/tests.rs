@@ -55,10 +55,18 @@ fn state(folder: &Path) -> Data<ServerState> {
     Data::new(ServerState::load(folder.to_path_buf()).unwrap())
 }
 
+fn folder(name: &str) -> PathBuf {
+    let folder = target_dir().join("test").join(name);
+    ensure_not_exists(&folder);
+    folder
+}
+
 macro_rules! app {
-    ($state:expr) => {
-        init_service(App::new().app_data($state).configure(register_routes))
-            .await
+    ($folder:expr) => {
+        init_service(
+            App::new().app_data(state(&$folder)).configure(register_routes),
+        )
+        .await
     };
 }
 
@@ -80,14 +88,12 @@ macro_rules! res {
 
 #[actix_web::test]
 async fn feedback() {
-    let folder = target_dir().join("test").join("feedback");
-    ensure_not_exists(&folder);
-
-    let app = app!(state(&folder));
+    let folder = folder("feedback");
+    let app = app!(folder);
 
     assert_eq!(get!(&app, "/feedback"), "[]");
 
-    let contents = vec!["Some content\n\u{2240}Heart", "", "\r", "."];
+    let contents = vec!["Some content\n\u{2240}Heart", "content", "\r", "."];
 
     for content in &contents {
         let req = TestRequest::post()
@@ -97,20 +103,22 @@ async fn feedback() {
         assert_eq!(res!(&app, req), "");
     }
 
+    let req = TestRequest::post().uri("/feedback").set_payload("").to_request();
+    let res = call_service(&app, req).await.status();
+    assert_eq!(res, StatusCode::BAD_REQUEST);
+
     let ser = serde_json::to_string(&contents).unwrap();
     assert_eq!(get!(&app, "/feedback"), ser);
-    assert_eq!(get!(&app!(state(&folder)), "/feedback"), ser);
+    assert_eq!(get!(&app!(folder), "/feedback"), ser);
 
     fs::remove_dir_all(&folder).unwrap();
-    assert_eq!(get!(&app!(state(&folder)), "/feedback"), "[]");
+    assert_eq!(get!(&app!(folder), "/feedback"), "[]");
 }
 
 #[actix_web::test]
 async fn items() {
-    let folder = target_dir().join("test").join("items");
-    ensure_not_exists(&folder);
-
-    let app = app!(state(&folder));
+    let folder = folder("items");
+    let app = app!(folder);
 
     assert_eq!(get!(&app, "/items"), "[]");
 
@@ -149,17 +157,17 @@ async fn items() {
 
     let ser = serde_json::to_string(&items).unwrap();
     assert_eq!(get!(app, "/items"), ser);
-    assert_eq!(get!(app!(state(&folder)), "/items"), ser);
+    assert_eq!(get!(app!(folder), "/items"), ser);
 
     fs::remove_dir_all(&folder).unwrap();
-    assert_eq!(get!(app!(state(&folder)), "/items"), "[]");
+    assert_eq!(get!(app!(folder), "/items"), "[]");
 }
 
 #[actix_web::test]
 async fn server_error() {
-    let folder = target_dir().join("test").join("server_error");
+    let folder = folder("server_error");
+    let app = app!(folder);
 
-    let app = app!(state(&folder));
     ensure_not_exists(&folder);
 
     let req =
@@ -170,10 +178,8 @@ async fn server_error() {
 
 #[actix_web::test]
 async fn not_found() {
-    let folder = target_dir().join("test").join("not_found");
-
-    let app = app!(state(&folder));
-    ensure_not_exists(&folder);
+    let folder = folder("not_found");
+    let app = app!(folder);
 
     let req = TestRequest::get().uri("/not-a-valid-route").to_request();
     let res = call_service(&app, req).await;
@@ -182,7 +188,7 @@ async fn not_found() {
 
 #[test]
 async fn invalid_data() {
-    let folder = target_dir().join("test").join("invalid_data");
+    let folder = folder("invalid_data");
 
     fs::create_dir_all(&folder).unwrap();
     fs::write(folder.join("data"), "invalid data").unwrap();

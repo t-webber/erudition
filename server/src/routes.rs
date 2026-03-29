@@ -68,7 +68,11 @@ async fn get_feedback(state: Data<ServerState>) -> HttpResponse {
 #[post("/feedback")]
 async fn post_feedback(data: String, state: Data<ServerState>) -> HttpResponse {
     state.log(&format!("POST: /feedback: {data:?}"));
-    handle_internal_error(state.add_feedback(data))
+    if data.is_empty() {
+        HttpResponse::BadRequest().into()
+    } else {
+        handle_internal_error(state.add_feedback(data))
+    }
 }
 
 /// Registers all the routes of the app from the given file.
