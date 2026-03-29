@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-dioxus = "0.7.3"
+dioxus = { version = "0.7.3", features = ["router"] }
 dioxus-signals = "0.7.3"
 erudition-lib = { version = "0.1.0", path = "../lib" }
 reqwest = { version = "0.13.2", features = ["json"] }

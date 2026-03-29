@@ -23,6 +23,7 @@
     clippy::nursery,
 //     clippy::cargo
 )]
+#![expect(clippy::pub_use, reason = "needed by dioxus")]
 #![allow(
     clippy::single_call_fn,
     clippy::implicit_return,
@@ -39,73 +40,35 @@
     reason = "bad lints"
 )]
 
+/// Page that displays the questions.
+mod questions;
+/// Handles the routes and displays the page corresponding to the current route.
+mod router;
+
 use dioxus::core::Element;
 use dioxus::dioxus_core;
-use dioxus::hooks::use_signal;
 use dioxus::prelude::*;
-use erudition_lib::Item;
+
+use crate::router::Route;
 
 /// Predefined Tailwind CSS classes and styles.
 #[expect(clippy::volatile_composites, reason = "foreign macro")]
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 
-/// Cross-platform HOST ip.
-const HOST: &str =
-    if cfg!(target_os = "android") { "10.0.2.2" } else { "127.0.0.1" };
-
 fn main() {
     dioxus::launch(App);
 }
 
-/// Fetches the items from the server.
-async fn fetch_items() -> Option<Vec<Item>> {
-    reqwest::get(format!("http://{HOST}:3000/items"))
-        .await
-        .ok()?
-        .json()
-        .await
-        .ok()
-}
-
 #[component]
 fn App() -> Element {
-    let default_item =
-        Item::MultipleChoice { answers: vec![], question: "a question".into() };
-
-    let mut refetch = use_signal(|| true);
-    let items = use_resource(move || async move {
-        refetch();
-        fetch_items().await
-    });
-    let mut index = use_signal(|| 0usize);
-
-    let question = items
-        .read()
-        .clone()
-        .unwrap_or_default()
-        .unwrap_or_default()
-        .get(index())
-        .unwrap_or(&default_item)
-        .clone()
-        .question();
-    let len =
-        items.read().clone().unwrap_or_default().unwrap_or_default().len();
-
     rsx! {
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
 
-        button {
-            onclick: move |_| if len != 0 {*index.write() = (index() + 1usize) % len},
-            "next"
+        main {
+            class: "bg-black h-dvh text-gray-200",
+
+            Router::<Route> {}
         }
-        button {
-            class: "bg-blue-300 p-1 m-1",
-            onclick: move |_| *refetch.write()= true,
-            "refetch"
-        }
-        div {
-            class: "bg-red-300 p-2 border-red-500 b-8 border w-fit",
-            p { "{question}" }
-        }
+
     }
 }
