@@ -1,5 +1,6 @@
 use core::mem::replace;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 
 use erudition_lib::{Hashed, Item, Username};
 use serde::{Deserialize, Serialize};
@@ -25,6 +26,17 @@ impl StoredData {
     /// Adds a new item entry
     pub fn add_item(&mut self, item: Item) {
         self.items.push(item);
+    }
+
+    /// Adds a new user
+    pub fn add_user(&mut self, username: Username, password: Hashed) -> bool {
+        match self.users.entry(username) {
+            Entry::Occupied(_) => false,
+            Entry::Vacant(vacant) => {
+                vacant.insert(password);
+                true
+            }
+        }
     }
 
     /// Edits an existing item.

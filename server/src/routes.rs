@@ -1,17 +1,17 @@
 use actix_web::cookie::{Cookie, SameSite};
 use actix_web::web::{Data, Json, Path, ServiceConfig};
 use actix_web::{HttpResponse, get, post, put};
-use erudition_lib::{Auth, Item};
+use erudition_lib::{Auth, Item, SessionId};
 
 use crate::state::ServerState;
 
-#[post("/auth")]
-async fn auth(state: Data<ServerState>, body: Json<Auth>) -> HttpResponse {
-    state.log("POST: /auth");
-    state.authenticate(body.into_inner()).map_or_else(
+/// Creates the response that matches an authentication request from a session
+/// id
+fn auth(res: Option<SessionId>) -> HttpResponse {
+    res.map_or_else(
         || HttpResponse::Unauthorized().into(),
         |session_id| {
-            let cookie = Cookie::build("session_id", session_id)
+            let cookie = Cookie::build("session_id", session_id.0)
                 .http_only(true)
                 .secure(true)
                 .same_site(SameSite::Strict)
@@ -20,6 +20,18 @@ async fn auth(state: Data<ServerState>, body: Json<Auth>) -> HttpResponse {
             HttpResponse::Ok().cookie(cookie).finish()
         },
     )
+}
+
+#[post("/signin")]
+async fn signin(state: Data<ServerState>, body: Json<Auth>) -> HttpResponse {
+    state.log("POST: /signin");
+    auth(state.signin(body.into_inner()))
+}
+
+#[post("/login")]
+async fn login(state: Data<ServerState>, body: Json<Auth>) -> HttpResponse {
+    state.log("POST: /login");
+    auth(state.login(body.into_inner()))
 }
 
 #[get("/items")]
@@ -66,7 +78,8 @@ pub fn register_routes(app: &mut ServiceConfig) {
     app.service(get_items)
         .service(post_item)
         .service(put_item)
-        .service(auth)
+        .service(signin)
+        .service(login)
         .service(get_feedback)
         .service(post_feedback);
 }

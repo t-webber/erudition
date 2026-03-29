@@ -3,9 +3,14 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use argon2::{Argon2, PasswordHash, PasswordVerifier as _};
+use argon2::password_hash::SaltString;
+use argon2::password_hash::rand_core::OsRng;
+use argon2::{
+    Argon2, PasswordHash, PasswordHasher as _, PasswordVerifier as _
+};
 use color_eyre::eyre::Context as _;
-use erudition_lib::{Auth, Item, SessionId, Username};
+use erudition_lib::{Auth, Hashed, Item, SessionId, Username};
+use getrandom::fill;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
@@ -55,27 +60,6 @@ impl ServerState {
     pub fn add_item(&self, item: Item) -> bool {
         lock!(self.data).add_item(item);
         self.store()
-    }
-
-    /// Authenticates a user
-    ///
-    /// Checks that username and password are valid, and returns a session id.
-    #[must_use]
-    pub fn authenticate(&self, auth: Auth) -> Option<String> {
-        Argon2::default()
-            .verify_password(
-                auth.password.0.as_bytes(),
-                &PasswordHash::new(
-                    &lock!(self.data).get_user(&auth.username)?.0,
-                )
-                .ok()?,
-            )
-            .ok()?;
-        let session_id =
-            String::from_utf8_lossy(&rand::random::<[u8; 1024]>()).to_string();
-        lock!(self.session_ids)
-            .insert(SessionId(session_id.clone()), auth.username);
-        Some(session_id)
     }
 
     /// Edit an existing item
@@ -152,6 +136,46 @@ impl ServerState {
         if let Err(err) = fs::write(&log_path, msg) {
             eprintln!("Failed to log error to {}: {err}", log_path.display());
         }
+    }
+
+    /// Login a user
+    ///
+    /// Checks that username and password are valid, and returns a session id.
+    #[must_use]
+    pub fn login(&self, auth: Auth) -> Option<SessionId> {
+        Argon2::default()
+            .verify_password(
+                auth.password.0.as_bytes(),
+                &PasswordHash::new(
+                    &lock!(self.data).get_user(&auth.username)?.0,
+                )
+                .ok()?,
+            )
+            .ok()?;
+        self.make_session_id(auth.username)
+    }
+
+    /// Makes a new session id for the given user
+    fn make_session_id(&self, username: Username) -> Option<SessionId> {
+        let mut bytes = [0; 64];
+        fill(&mut bytes).ok()?;
+        let session_id = SessionId(String::from_utf8_lossy(&bytes).to_string());
+        lock!(self.session_ids).insert(session_id.clone(), username);
+        Some(session_id)
+    }
+
+    /// Signin a user
+    ///
+    /// Checks that username and password are valid, and returns a session id.
+    #[must_use]
+    pub fn signin(&self, auth: Auth) -> Option<SessionId> {
+        let salt = SaltString::generate(&mut OsRng);
+        let hash = Argon2::default()
+            .hash_password(auth.password.0.as_bytes(), &salt)
+            .ok()?;
+        lock!(self.data)
+            .add_user(auth.username.clone(), Hashed(hash.to_string()));
+        self.make_session_id(auth.username)
     }
 
     /// Store the current state of the server at the given
