@@ -3,8 +3,9 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use argon2::{Argon2, PasswordHash, PasswordVerifier as _};
 use color_eyre::eyre::Context as _;
-use erudition_lib::{Auth, Item};
+use erudition_lib::{Auth, Item, SessionId, Username};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
@@ -38,7 +39,7 @@ pub struct ServerState {
     /// temporary files, etc.)
     path: PathBuf,
     /// Session ids of logged in users
-    session_ids: Mutex<HashMap<String, String>>,
+    session_ids: Mutex<HashMap<SessionId, Username>>,
 }
 
 impl ServerState {
@@ -60,11 +61,21 @@ impl ServerState {
     ///
     /// Checks that username and password are valid, and returns a session id.
     #[must_use]
-    pub fn authenticate(&self, auth: Auth) -> String {
+    pub fn authenticate(&self, auth: Auth) -> Option<String> {
+        Argon2::default()
+            .verify_password(
+                auth.password.0.as_bytes(),
+                &PasswordHash::new(
+                    &lock!(self.data).get_user(&auth.username)?.0,
+                )
+                .ok()?,
+            )
+            .ok()?;
         let session_id =
             String::from_utf8_lossy(&rand::random::<[u8; 1024]>()).to_string();
-        lock!(self.session_ids).insert(session_id.clone(), auth.username);
-        session_id
+        lock!(self.session_ids)
+            .insert(SessionId(session_id.clone()), auth.username);
+        Some(session_id)
     }
 
     /// Edit an existing item

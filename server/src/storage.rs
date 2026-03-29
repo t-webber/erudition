@@ -1,6 +1,7 @@
 use core::mem::replace;
+use std::collections::HashMap;
 
-use erudition_lib::Item;
+use erudition_lib::{Hashed, Item, Username};
 use serde::{Deserialize, Serialize};
 
 /// State data that is stored on the disk to be still available after the server
@@ -11,6 +12,8 @@ pub struct StoredData {
     feedback: Vec<String>,
     /// List of current items
     items: Vec<Item>,
+    /// Maps username to password
+    users: HashMap<Username, Hashed>,
 }
 
 impl StoredData {
@@ -39,5 +42,10 @@ impl StoredData {
     #[must_use]
     pub fn get_items(&self) -> &[Item] {
         &self.items
+    }
+
+    /// Checks that those credentials are valid
+    pub fn get_user(&self, username: &Username) -> Option<&Hashed> {
+        self.users.get(username)
     }
 }

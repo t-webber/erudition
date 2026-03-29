@@ -8,14 +8,18 @@ use crate::state::ServerState;
 #[post("/auth")]
 async fn auth(state: Data<ServerState>, body: Json<Auth>) -> HttpResponse {
     state.log("POST: /auth");
-    let session_id = state.authenticate(body.into_inner());
-    let cookie = Cookie::build("session_id", session_id)
-        .http_only(true)
-        .secure(true)
-        .same_site(SameSite::Strict)
-        .path("/")
-        .finish();
-    HttpResponse::Ok().cookie(cookie).finish()
+    state.authenticate(body.into_inner()).map_or_else(
+        || HttpResponse::Unauthorized().into(),
+        |session_id| {
+            let cookie = Cookie::build("session_id", session_id)
+                .http_only(true)
+                .secure(true)
+                .same_site(SameSite::Strict)
+                .path("/")
+                .finish();
+            HttpResponse::Ok().cookie(cookie).finish()
+        },
+    )
 }
 
 #[get("/items")]

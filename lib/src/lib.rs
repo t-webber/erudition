@@ -42,14 +42,26 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Defines new types
+macro_rules! newtype {
+    ($($name:ident),*) => {
+        $(
+            #[doc = stringify!(concat_idents!(Newtype, for, $name))]
+            #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Clone)]
+            #[expect(clippy::exhaustive_structs, reason = "newtype")]
+            pub struct $name(pub String);
+        )*
+    };
+}
+
 /// Authentication request body
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Auth {
     /// Plain password
-    pub password: String,
+    pub password: Plain,
     /// Username
-    pub username: String,
+    pub username: Username,
 }
 
 /// Item store and returned by the server
@@ -75,3 +87,5 @@ impl Item {
         }
     }
 }
+
+newtype!(SessionId, Username, Hashed, Plain);
