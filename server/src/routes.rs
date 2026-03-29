@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use actix_web::cookie::{Cookie, SameSite};
 use actix_web::web::{Data, Json, Path, ServiceConfig};
 use erudition_lib::{Auth, Item, SessionId};
-use proc_macro::{get, post, put};
+use proc_macro::{get, post, put, routes};
 
 use crate::state::ServerState;
 
@@ -73,13 +73,7 @@ async fn post_feedback(data: String, state: Data<ServerState>) -> HttpResponse {
 ///
 /// Works better here to not forget to register them.
 pub fn register_routes(app: &mut ServiceConfig) {
-    app.service(get_items)
-        .service(post_item)
-        .service(put_item)
-        .service(signin)
-        .service(login)
-        .service(get_feedback)
-        .service(post_feedback);
+    routes!(app);
 }
 
 /// From a boolean indicating if an internal error occurrence, create an
