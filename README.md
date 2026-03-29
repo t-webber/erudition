@@ -40,21 +40,49 @@ A runner that handles all different aspects (server, app, logs) with one command
 Usage: dev [OPTIONS]
 
 Options:
-  -k, --kill                     Kill the running tmux session
-  -l, --logs-delay <LOGS_DELAY>  Change the delay between launching the app and opening the logs [default: 2000]
-  -o, --open                     Open the running tmux session
-  -s, --session <SESSION>        Name of the tmux session [default: erudition]
-  -h, --help                     Print help
+  -a, --app
+          Run only the app
+
+  -k, --kill
+          Kill the running tmux session
+
+  -l, --logs
+          Run only the logs
+
+  -n, --name <NAME>
+          Name of the tmux session
+
+          [default: erudition]
+
+  -o, --open
+          Open the running tmux session
+
+  -p, --platform <PLATFORM>
+          Platform on which to run the app
+
+          Possible values:
+          - android: Serve the app in an android emulator
+          - desktop: Serve the app natively
+          - web:     Serve the app in the browser
+
+          [default: desktop]
+
+  -s, --server
+          Run only the server
+
+  -h, --help
+          Print help (see a summary with '-h')
 ```
 
 ## Structure
 
 ```txt
 .
-├── app     <- front-end android app
-├── dev     <- dev script to ease development
-├── lib     <- shared code between app and server
-                   to ensure correctness of serde
-├── server  <- server
-└── target  <- builds folder, not committed
+├── app         <- front-end android app
+│   └── assets  <- front-end assets (styles, images, etc.)
+├── dev         <- dev script to ease development
+├── lib         <- shared code between app and server
+│                       to ensure correctness of serialisation
+├── server      <- server, supposed to run on a different machine
+└── target      <- builds folder, not committed
 ```
