@@ -42,6 +42,16 @@
 
 use serde::{Deserialize, Serialize};
 
+/// Authentication request body
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Auth {
+    /// Plain password
+    pub password: String,
+    /// Username
+    pub username: String,
+}
+
 /// Item store and returned by the server
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone)]

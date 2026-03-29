@@ -1,8 +1,22 @@
+use actix_web::cookie::{Cookie, SameSite};
 use actix_web::web::{Data, Json, Path, ServiceConfig};
 use actix_web::{HttpResponse, get, post, put};
-use erudition_lib::Item;
+use erudition_lib::{Auth, Item};
 
 use crate::state::ServerState;
+
+#[post("/auth")]
+async fn auth(state: Data<ServerState>, body: Json<Auth>) -> HttpResponse {
+    state.log("POST: /auth");
+    let session_id = state.authenticate(body.into_inner());
+    let cookie = Cookie::build("session_id", session_id)
+        .http_only(true)
+        .secure(true)
+        .same_site(SameSite::Strict)
+        .path("/")
+        .finish();
+    HttpResponse::Ok().cookie(cookie).finish()
+}
 
 #[get("/items")]
 async fn get_items(state: Data<ServerState>) -> HttpResponse {
@@ -48,6 +62,7 @@ pub fn register_routes(app: &mut ServiceConfig) {
     app.service(get_items)
         .service(post_item)
         .service(put_item)
+        .service(auth)
         .service(get_feedback)
         .service(post_feedback);
 }

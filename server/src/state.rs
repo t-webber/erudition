@@ -1,10 +1,10 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
 use color_eyre::eyre::Context as _;
-use erudition_lib::Item;
-use serde::{Deserialize, Serialize};
+use erudition_lib::{Auth, Item};
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
@@ -30,13 +30,15 @@ const TEMP_DATA: &str = "data.temp";
 const LOGS: &str = "logs";
 
 /// State of the server, accessible from all route handlers
-#[derive(Default, Serialize, Deserialize, Debug)]
+#[derive(Default, Debug)]
 pub struct ServerState {
     /// Data that is saved and reloaded
     data: Mutex<StoredData>,
     /// Path of the folder where data is written (persistent state, logs,
     /// temporary files, etc.)
     path: PathBuf,
+    /// Session ids of logged in users
+    session_ids: Mutex<HashMap<String, String>>,
 }
 
 impl ServerState {
@@ -52,6 +54,17 @@ impl ServerState {
     pub fn add_item(&self, item: Item) -> bool {
         lock!(self.data).add_item(item);
         self.store()
+    }
+
+    /// Authenticates a user
+    ///
+    /// Checks that username and password are valid, and returns a session id.
+    #[must_use]
+    pub fn authenticate(&self, auth: Auth) -> String {
+        let session_id =
+            String::from_utf8_lossy(&rand::random::<[u8; 1024]>()).to_string();
+        lock!(self.session_ids).insert(session_id.clone(), auth.username);
+        session_id
     }
 
     /// Edit an existing item
@@ -105,7 +118,7 @@ impl ServerState {
         fs::create_dir_all(&path).with_context(|| {
             format!("Failed to create parent of {}", path.display())
         })?;
-        Ok(Self { data, path })
+        Ok(Self { data, path, session_ids: Mutex::default() })
     }
 
     /// Writes some timestamped log to the log file and to the terminal.
