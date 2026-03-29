@@ -72,7 +72,7 @@ fn logged_actix_request(
             let mut log = String::new();
             #(#args)*
             let res = HttpResponse::from({ #block });
-            state.log(&format!("{} ({}){}", stringify!(#request), res.status().as_u16(), &log));
+            state.log(&format!("\x1b[36m{:4} {} ({}){}\x1b[0m", stringify!(#request), res.status().as_u16(), #path, &log));
             res
         }
     };

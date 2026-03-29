@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
+use std::io::Write as _;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
@@ -12,7 +13,7 @@ use color_eyre::eyre::Context as _;
 use erudition_lib::{Auth, Hashed, Item, SessionId, Username};
 use getrandom::fill;
 use time::OffsetDateTime;
-use time::format_description::well_known::Rfc3339;
+use time::macros::format_description;
 
 use crate::storage::StoredData;
 
@@ -118,24 +119,33 @@ impl ServerState {
 
     /// Writes some timestamped log to the log file and to the terminal.
     pub fn log(&self, msg: &str) {
-        match OffsetDateTime::now_utc().format(&Rfc3339) {
-            Ok(time) => self.log_no_date(&format!("[{time}] {msg}")),
-            Err(err) => {
-                self.log_no_date(msg);
-                self.log_no_date(&format!("Failed to get date: {err}"));
-            }
+        let timed_msg = Self::log_no_write(msg);
+        let log_path = self.file(LOGS);
+        if let Err(err) = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+            .and_then(|mut log_file| writeln!(log_file, "{timed_msg}"))
+        {
+            Self::log_no_write(&format!(
+                "\x1b[31mFailed to write logs to {}: {err}",
+                log_path.display()
+            ));
         }
     }
 
-    /// Writes some log to the log file and to stdout, without a date or
-    /// anything
+    /// Creates some timestamped log and prints it on the terminal
     #[expect(clippy::print_stderr, reason = "goal of function")]
-    fn log_no_date(&self, msg: &str) {
-        let log_path = self.file(LOGS);
-        eprintln!("{msg}");
-        if let Err(err) = fs::write(&log_path, msg) {
-            eprintln!("Failed to log error to {}: {err}", log_path.display());
-        }
+    pub fn log_no_write(msg: &str) -> String {
+        let format = format_description!(
+            "[year]-[month]-[day] [hour]:[minute]:[second]"
+        );
+        let timestamp = OffsetDateTime::now_utc()
+            .format(&format)
+            .unwrap_or_else(|_| "0000-00-00 00:00:00".to_owned());
+        let timed_msg = format!("\x1b[33m[{timestamp}]\x1b[35m {msg}\x1b[0m");
+        eprintln!("{timed_msg}");
+        timed_msg
     }
 
     /// Login a user
@@ -189,6 +199,8 @@ impl ServerState {
     /// file path
     pub fn store(&self) -> bool {
         self.log("Storing data");
+        let tmp_file = self.file(TEMP_DATA);
+        let data_file = self.file(DATA);
         postcard::to_allocvec(&self.data)
             .map_err(|err| {
                 format!(
@@ -198,16 +210,21 @@ impl ServerState {
                 )
             })
             .and_then(|data| {
-                fs::write(self.file(TEMP_DATA), data).map_err(|err| {
-                    format!("Failed to save data to {TEMP_DATA}: {err}")
+                fs::write(&tmp_file, data).map_err(|err| {
+                    format!(
+                        "Failed to save data to {}: {err}",
+                        tmp_file.display()
+                    )
                 })
             })
             .and_then(|()| {
-                fs::rename(self.file(TEMP_DATA), self.file(DATA)).map_err(
-                    |err| {
-                        format!("Failed to move {TEMP_DATA} to {DATA}: {err}")
-                    },
-                )
+                fs::rename(&tmp_file, &data_file).map_err(|err| {
+                    format!(
+                        "Failed to move {} to {}: {err}",
+                        tmp_file.display(),
+                        data_file.display()
+                    )
+                })
             })
             .map_err(|msg| self.log(&msg))
             .is_ok()
