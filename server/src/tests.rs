@@ -8,7 +8,7 @@ use actix_web::http::StatusCode;
 use actix_web::test::{TestRequest, call_service, init_service};
 use actix_web::web::Data;
 use actix_web::{App, test};
-use erudition_lib::Item;
+use erudition_lib::{Auth, Item};
 
 use crate::routes::register_routes;
 use crate::state::ServerState;
@@ -195,4 +195,53 @@ async fn invalid_data() {
 
     let e = ServerState::load(folder).unwrap_err();
     assert!(dbg!(e.to_string()).contains("has invalid data"));
+}
+
+#[test]
+async fn no_payload() {
+    let folder = folder("no_payload");
+    let app = app!(folder);
+    let req = TestRequest::post().uri("/item").to_request();
+    let res = call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+}
+
+#[test]
+async fn invalid_payload() {
+    let folder = folder("invalid_payload");
+    let app = app!(folder);
+    let req = TestRequest::post()
+        .uri("/item")
+        .set_payload("some string")
+        .to_request();
+    let res = call_service(&app, req).await;
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+}
+
+#[test]
+async fn auth() {
+    let folder = folder("auth");
+    let app = app!(folder);
+
+    macro_rules! auth {
+        ($name:expr, $code:ident) => {{
+            let req = TestRequest::post()
+                .uri($name)
+                .set_json(Auth::new(
+                    "bob".into(),
+                    "complex_password@192!/.\"$".into(),
+                ))
+                .to_request();
+            let res = call_service(&app, req).await;
+            assert_eq!(res.status(), StatusCode::$code);
+            if StatusCode::$code == StatusCode::OK {
+                res.headers().get("set-cookie").unwrap().to_str().unwrap();
+            }
+        }};
+    }
+
+    auth!("/login", UNAUTHORIZED);
+    auth!("/signin", OK);
+    auth!("/login", OK);
+    auth!("/signin", UNAUTHORIZED);
 }
