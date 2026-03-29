@@ -43,4 +43,4 @@ jobs:
               run: touch app/assets/tailwind.css
 
             - name: Check documentation
-              run: RUSTDOCFLAGS="-D warnings" cargo doc --document-private-items --all --release
+              run: RUSTDOCFLAGS="-D warnings" cargo doc --document-private-items --all --release --no-deps
