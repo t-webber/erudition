@@ -40,6 +40,8 @@
     reason = "bad lints"
 )]
 
+/// Page that displays the / page.
+mod home;
 /// Page that displays the questions.
 mod questions;
 /// Handles the routes and displays the page corresponding to the current route.
