@@ -35,6 +35,11 @@ pub struct Server {
 impl Server {
     /// Resolves a path in case it is not provided as a CLI
     /// argument.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the environment is missing a crucial variable, like
+    /// `HOME`.
     fn data_dir(cli_path: Option<PathBuf>) -> color_eyre::Result<PathBuf> {
         let path = if let Some(path) = cli_path {
             path
@@ -57,6 +62,11 @@ impl Server {
     }
 
     /// Runs the app
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if failed to initialise the app's state or to start it.
+    /// Once running, it should handle errors and never return one.
     pub fn run(self) -> color_eyre::Result<()> {
         let state =
             Data::new(ServerState::load(Self::data_dir(self.folder_path)?)?);

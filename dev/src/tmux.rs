@@ -32,7 +32,7 @@ impl Tmux {
 
     /// Creates a new [`Tmux`] with the given name.
     pub const fn new(session: String, root_path: PathBuf) -> Self {
-        Self { root_path, session, pane_index: 0 }
+        Self { pane_index: 0, root_path, session }
     }
 
     /// Runs a tmux 'send-keys' command with nice error handling

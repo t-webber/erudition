@@ -70,12 +70,13 @@ impl Auth {
     /// Creates a new [`Auth`] from the given credentials
     #[must_use]
     pub const fn new(username: Box<str>, password: Box<str>) -> Self {
-        Self { username: Username(username), password: Plain(password) }
+        Self { password: Plain(password), username: Username(username) }
     }
 }
 
 /// Item store and returned by the server
 #[non_exhaustive]
+#[expect(clippy::enum_variant_names, reason = "only one variant")]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Item {
     /// Multiple choice question

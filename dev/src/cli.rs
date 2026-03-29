@@ -79,15 +79,15 @@ impl Cli {
             current_exe().context("failed to get current executable path")?;
         Ok(Runner {
             action: Action::from_cli(&self),
-            session: self.name,
+            platform: self.platform,
             root_path: this
                 .parent()
                 .and_then(Path::parent)
                 .and_then(Path::parent)
                 .context("failed to project's root path")?
                 .to_path_buf(),
+            session: self.name,
             this,
-            platform: self.platform,
         })
     }
 }

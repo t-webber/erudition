@@ -1,4 +1,8 @@
-#![allow(clippy::restriction, reason = "tests are reproductable")]
+#![allow(
+    clippy::restriction,
+    clippy::missing_panics_doc,
+    reason = "tests should fail"
+)]
 
 use std::path::{Path, PathBuf};
 use std::process::Command;

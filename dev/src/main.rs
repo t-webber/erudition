@@ -39,6 +39,10 @@
     clippy::doc_paragraphs_missing_punctuation,
     reason = "bad lints"
 )]
+#![allow(
+    clippy::missing_errors_doc,
+    reason = "this crate is all about running commands"
+)]
 
 /// Cli arguments parsing
 mod cli;

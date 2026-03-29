@@ -39,6 +39,7 @@
     clippy::integer_division_remainder_used,
     reason = "bad lints"
 )]
+#![allow(clippy::wildcard_imports, reason = "needed by dioxus")]
 
 /// Page that displays the / page.
 mod home;

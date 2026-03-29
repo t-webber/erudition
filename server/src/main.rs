@@ -55,6 +55,10 @@ use clap::Parser as _;
 
 use crate::server::Server;
 
+/// # Errors
+///
+/// Returns an error if the app failed to initialise with the given parameters.
+/// Once running, it shouldn't return
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
     Server::parse().run()

@@ -88,6 +88,11 @@ impl ServerState {
     }
 
     /// Loads the state from the given file path
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if an state was stored in the data file, but it can't
+    /// read it or it is invalid.
     pub fn load(path: PathBuf) -> color_eyre::Result<Self> {
         let data_path = path.join(DATA);
         let data_exists = fs::exists(&data_path).with_context(|| {

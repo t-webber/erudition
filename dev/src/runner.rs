@@ -82,12 +82,6 @@ impl Runner {
     }
 
     /// Listens to the logs and prettify them
-    #[expect(
-        clippy::arithmetic_side_effects,
-        clippy::string_slice,
-        clippy::print_stdout,
-        reason = "i don't care"
-    )]
     fn run_logs(&self) -> Result {
         let mut child = Command::new("adb")
             .arg("logcat")
@@ -99,33 +93,40 @@ impl Runner {
             child.stdout.take().context("Failed to reach stdout of adb")?,
         );
         for next in reader.lines() {
-            let line = next.context("Failed to read output of adb")?;
-
-            if line.contains("RustStdoutStderr")
-                && !line.contains("s_glBindAttribLocation")
-                && let Some(datetime_end) =
-                    line.find(' ').and_then(|date_end| {
-                        line[date_end + 1..]
-                            .find(' ')
-                            .map(|relative| relative + date_end + 1)
-                    })
-                && let Some(begin) = line[datetime_end + 1..]
-                    .find("I RustStdoutStderr: ")
-                    .map(|begin| {
-                        datetime_end + 1 + begin + "I RustStdoutStderr: ".len()
-                    })
-            {
-                print!("\x1b[37m{}\x1b[0m ", &line[0..datetime_end]);
-                if line[begin..].chars().next().is_some_and(|ch| ch == '[')
-                    && let Some(end) = line[begin..].find(']')
-                {
-                    let (scope, text) = line[begin..].split_at(end + 1);
-                    println!("\x1b[33m{scope}\x1b[0m{text}");
-                } else {
-                    println!("{}", &line[begin..]);
-                }
-            }
+            log_line(&next.context("Failed to read output of adb")?);
         }
         Ok(())
+    }
+}
+
+/// Logs an adb line with style
+#[expect(
+    clippy::arithmetic_side_effects,
+    clippy::string_slice,
+    clippy::print_stdout,
+    reason = "just a runner"
+)]
+fn log_line(line: &str) {
+    if line.contains("RustStdoutStderr")
+        && !line.contains("s_glBindAttribLocation")
+        && let Some(datetime_end) = line.find(' ').and_then(|date_end| {
+            line[date_end + 1..]
+                .find(' ')
+                .map(|relative| relative + date_end + 1)
+        })
+        && let Some(begin) =
+            line[datetime_end + 1..].find("I RustStdoutStderr: ").map(|begin| {
+                datetime_end + 1 + begin + "I RustStdoutStderr: ".len()
+            })
+    {
+        print!("\x1b[37m{}\x1b[0m ", &line[0..datetime_end]);
+        if line[begin..].chars().next().is_some_and(|ch| ch == '[')
+            && let Some(end) = line[begin..].find(']')
+        {
+            let (scope, text) = line[begin..].split_at(end + 1);
+            println!("\x1b[33m{scope}\x1b[0m{text}");
+        } else {
+            println!("{}", &line[begin..]);
+        }
     }
 }
