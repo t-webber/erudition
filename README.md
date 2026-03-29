@@ -14,12 +14,13 @@
 
 ## Development
 
-To proceed, you will need to instal:
+To proceed, you will need to install:
 
 - `tmux` (should be in your package manager)
 - [`cargo`](https://rust-lang.org/tools/install/)
 - `dx` that can be installed with `cargo install dioxus-cli`
 - `android-studio` with a working emulator, more information on how to set it up [here](https://dioxuslabs.com/learn/0.6/guides/mobile/#android).
+- [`tailwindcss`](https://github.com/tailwindlabs/tailwindcss)
 
 Then, the only thing you need to run is:
 
