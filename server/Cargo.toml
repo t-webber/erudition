@@ -15,6 +15,7 @@ erudition-lib = { version = "0.1.0", path = "../lib" }
 actix-cors = "0.7.1"
 argon2 = { version = "0.5.3", features = ["password-hash", "std"] }
 getrandom = { version = "0.4.2" }
+proc-macro = { version = "0.1.0", path = "../proc-macro" }
 
 [dev-dependencies]
 serde_json = "1.0.149"

@@ -1,7 +1,8 @@
+use actix_web::HttpResponse;
 use actix_web::cookie::{Cookie, SameSite};
 use actix_web::web::{Data, Json, Path, ServiceConfig};
-use actix_web::{HttpResponse, get, post, put};
 use erudition_lib::{Auth, Item, SessionId};
+use proc_macro::{get, post, put};
 
 use crate::state::ServerState;
 
@@ -24,25 +25,21 @@ fn auth(res: Option<SessionId>) -> HttpResponse {
 
 #[post("/signin")]
 async fn signin(state: Data<ServerState>, body: Json<Auth>) -> HttpResponse {
-    state.log("POST: /signin");
     auth(state.signin(body.into_inner()))
 }
 
 #[post("/login")]
 async fn login(state: Data<ServerState>, body: Json<Auth>) -> HttpResponse {
-    state.log("POST: /login");
     auth(state.login(body.into_inner()))
 }
 
 #[get("/items")]
 async fn get_items(state: Data<ServerState>) -> HttpResponse {
-    state.log("GET: /items");
     HttpResponse::Ok().json(state.get_items())
 }
 
 #[post("/item")]
 async fn post_item(item: Json<Item>, state: Data<ServerState>) -> HttpResponse {
-    state.log(&format!("POST: /item: {item:?}"));
     handle_internal_error(state.add_item(item.into_inner()))
 }
 
@@ -52,7 +49,6 @@ async fn put_item(
     index: Path<usize>,
     item: Json<Item>,
 ) -> HttpResponse {
-    state.log(&format!("PUT: /item/{index}: {item:?}"));
     state.edit_item(index.into_inner(), item.into_inner()).map_or_else(
         || HttpResponse::BadRequest().body("Index is not valid"),
         handle_internal_error,
@@ -61,13 +57,11 @@ async fn put_item(
 
 #[get("/feedback")]
 async fn get_feedback(state: Data<ServerState>) -> HttpResponse {
-    state.log("GET: /feedback");
     HttpResponse::Ok().json(state.get_feedback())
 }
 
 #[post("/feedback")]
 async fn post_feedback(data: String, state: Data<ServerState>) -> HttpResponse {
-    state.log(&format!("POST: /feedback: {data:?}"));
     if data.is_empty() {
         HttpResponse::BadRequest().into()
     } else {
