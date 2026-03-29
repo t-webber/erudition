@@ -41,6 +41,8 @@ jobs:
                 override: true
                 components: clippy
 
-            - name: Cargo clippy
+            - name: Create auto-generated files
               run: touch app/assets/tailwind.css
+
+            - name: Cargo clippy
               run: cargo clippy --all --all-targets

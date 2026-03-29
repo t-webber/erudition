@@ -41,6 +41,8 @@ jobs:
                 toolchain: ${{ matrix.rust }}
                 override: true
 
-            - name: Cargo build
+            - name: Create auto-generated files
               run: touch app/assets/tailwind.css
+
+            - name: Cargo build
               run: cargo build --release --all-targets

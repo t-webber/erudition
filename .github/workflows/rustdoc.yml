@@ -39,6 +39,8 @@ jobs:
                 toolchain: ${{ matrix.rust }}
                 override: true
 
-            - name: Check documentation
+            - name: Create auto-generated files
               run: touch app/assets/tailwind.css
+
+            - name: Check documentation
               run: RUSTDOCFLAGS="-D warnings" cargo doc --document-private-items --all --release
