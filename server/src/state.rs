@@ -159,7 +159,9 @@ impl ServerState {
     fn make_session_id(&self, username: Username) -> Option<SessionId> {
         let mut bytes = [0; 64];
         fill(&mut bytes).ok()?;
-        let session_id = SessionId(String::from_utf8_lossy(&bytes).to_string());
+        let ascii_bytes = bytes.map(random_to_ascii);
+        let id = String::from_utf8_lossy(&ascii_bytes);
+        let session_id = SessionId(id.into());
         lock!(self.session_ids).insert(session_id.clone(), username);
         Some(session_id)
     }
@@ -173,9 +175,14 @@ impl ServerState {
         let hash = Argon2::default()
             .hash_password(auth.password.0.as_bytes(), &salt)
             .ok()?;
-        lock!(self.data)
-            .add_user(auth.username.clone(), Hashed(hash.to_string()));
-        self.make_session_id(auth.username)
+        if lock!(self.data).add_user(
+            auth.username.clone(),
+            Hashed(hash.to_string().into_boxed_str()),
+        ) {
+            self.make_session_id(auth.username)
+        } else {
+            None
+        }
     }
 
     /// Store the current state of the server at the given
@@ -205,4 +212,14 @@ impl ServerState {
             .map_err(|msg| self.log(&msg))
             .is_ok()
     }
+}
+
+/// Casts and transforms a byte to make it valid ASCII for cookies
+#[expect(
+    clippy::arithmetic_side_effects,
+    clippy::integer_division_remainder_used,
+    reason = "in bounds and valid"
+)]
+const fn random_to_ascii(byte: u8) -> u8 {
+    33 + byte % (127 - 33)
 }

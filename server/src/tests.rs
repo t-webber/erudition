@@ -125,8 +125,8 @@ async fn items() {
     macro_rules! item {
         ($question:literal, $($answer:literal),*) => {
             Item::MultipleChoice {
-                answers: vec![ $($answer.to_string()),* ],
-                question: $question.to_string(),
+                answers: vec![ $($answer.into()),* ],
+                question: $question.into(),
             }
         };
     }

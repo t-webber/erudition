@@ -29,6 +29,7 @@ impl StoredData {
     }
 
     /// Adds a new user
+    #[must_use]
     pub fn add_user(&mut self, username: Username, password: Hashed) -> bool {
         match self.users.entry(username) {
             Entry::Occupied(_) => false,

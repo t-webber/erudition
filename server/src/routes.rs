@@ -11,7 +11,7 @@ fn auth(res: Option<SessionId>) -> HttpResponse {
     res.map_or_else(
         || HttpResponse::Unauthorized().into(),
         |session_id| {
-            let cookie = Cookie::build("session_id", session_id.0)
+            let cookie = Cookie::build("session_id", &*session_id.0)
                 .http_only(true)
                 .secure(true)
                 .same_site(SameSite::Strict)

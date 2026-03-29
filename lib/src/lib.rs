@@ -49,7 +49,7 @@ macro_rules! newtype {
             #[doc = stringify!(concat_idents!(Newtype, for, $name))]
             #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Clone)]
             #[expect(clippy::exhaustive_structs, reason = "newtype")]
-            pub struct $name(pub String);
+            pub struct $name(pub Box<str>);
         )*
     };
 }
@@ -64,6 +64,14 @@ pub struct Auth {
     pub username: Username,
 }
 
+impl Auth {
+    /// Creates a new [`Auth`] from the given credentials
+    #[must_use]
+    pub const fn new(username: Box<str>, password: Box<str>) -> Self {
+        Self { username: Username(username), password: Plain(password) }
+    }
+}
+
 /// Item store and returned by the server
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -72,16 +80,16 @@ pub enum Item {
     MultipleChoice {
         /// Possible answers, the first is always the
         /// correct answer
-        answers: Vec<String>,
+        answers: Vec<Box<str>>,
         /// Question
-        question: String,
+        question: Box<str>,
     },
 }
 
 impl Item {
     /// Returns the question that corresponds to the this item.
     #[must_use]
-    pub fn question(self) -> String {
+    pub fn question(self) -> Box<str> {
         match self {
             Self::MultipleChoice { question, .. } => question,
         }
