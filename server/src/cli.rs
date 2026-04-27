@@ -8,6 +8,7 @@ use clap::Parser;
 use color_eyre::eyre::Context as _;
 
 use crate::dir::DataDir;
+use crate::initialise::Initialise;
 use crate::routes::register_routes;
 use crate::state::ServerState;
 
@@ -46,6 +47,10 @@ impl Server {
     /// Once running, it should handle errors and never return one.
     pub fn run(self) -> color_eyre::Result<()> {
         let data_dir = DataDir::new(self.folder_path)?;
+
+        if self.initialise {
+            return Initialise::initialise(&data_dir);
+        }
 
         let state = Data::new(ServerState::load(data_dir)?);
 

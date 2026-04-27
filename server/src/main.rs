@@ -1,11 +1,13 @@
 //! Server for the erudition app.
 
+/// Server cli and runner.
+mod cli;
 /// Stores the location at which the data should be stored to and loaded from.
 mod dir;
+/// Initialises data from some `csv` files.
+mod initialise;
 /// Server routes and their handler.
 mod routes;
-/// Server cli and runner.
-mod server;
 /// Server state, shared across route handlers.
 mod state;
 /// State that is stored to the file system to be persistent after the server is
@@ -16,7 +18,7 @@ mod tests;
 
 use clap::Parser as _;
 
-use crate::server::Server;
+use crate::cli::Server;
 
 /// # Errors
 ///
