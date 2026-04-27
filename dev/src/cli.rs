@@ -7,7 +7,7 @@ use color_eyre::eyre::{Context as _, ContextCompat as _};
 
 use crate::runner::Runner;
 
-/// Macro to ease create of the [`Action`] enum
+/// Macro to ease create of the [`Action`] enum.
 macro_rules! first_true {
     ($( $flag:ident => $variant:ident ,)*) => {
         pub enum Action {
@@ -48,25 +48,25 @@ first_true! {
         .multiple(false)
 ))]
 pub struct Cli {
-    /// Run only the app
+    /// Run only the app.
     #[arg(short, long, default_value_t = false)]
     app: bool,
-    /// Kill the running tmux session
+    /// Kill the running tmux session.
     #[arg(short, long, default_value_t = false)]
     kill: bool,
-    /// Run only the logs
+    /// Run only the logs.
     #[arg(short, long, default_value_t = false)]
     logs: bool,
-    /// Name of the tmux session
+    /// Name of the tmux session.
     #[arg(short, long, default_value = "erudition")]
     name: String,
-    /// Open the running tmux session
+    /// Open the running tmux session.
     #[arg(short, long, default_value_t = false)]
     open: bool,
-    /// Platform on which to run the app
+    /// Platform on which to run the app.
     #[arg(short, long, default_value = "desktop")]
     platform: Platform,
-    /// Run only the server
+    /// Run only the server.
     #[arg(short, long, default_value_t = false)]
     server: bool,
 }
@@ -92,14 +92,14 @@ impl Cli {
     }
 }
 
-/// Platform on which to run the app
+/// Platform on which to run the app.
 #[derive(Debug, ValueEnum, Copy, Clone)]
 pub enum Platform {
-    /// Serve the app in an android emulator
+    /// Serve the app in an android emulator.
     Android,
-    /// Serve the app natively
+    /// Serve the app natively.
     Desktop,
-    /// Serve the app in the browser
+    /// Serve the app in the browser.
     Web,
 }
 

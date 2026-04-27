@@ -7,3 +7,6 @@ edition = "2024"
 dioxus.workspace = true
 erudition-lib.workspace = true
 reqwest.workspace = true
+
+[lints]
+workspace = true

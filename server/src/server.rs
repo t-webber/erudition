@@ -10,7 +10,7 @@ use color_eyre::eyre::{Context as _, ContextCompat as _};
 use crate::routes::register_routes;
 use crate::state::ServerState;
 
-/// Server app that runs with the given parameters
+/// Server app that runs with the given parameters.
 #[derive(Parser)]
 pub struct Server {
     /// Path to the folder where to store the state and logs of the server to
@@ -21,13 +21,13 @@ pub struct Server {
     #[arg(short = 'F', long)]
     folder_path: Option<PathBuf>,
     /// Host to use for serving the app, defaults to
-    /// localhost
+    /// localhost.
     #[arg(short = 'H', long, default_value = "localhost")]
     host: String,
-    /// Port to use for serving the app, defaults to 3000
+    /// Port to use for serving the app, defaults to 3000.
     ///
     /// Defaults to a file erudition/log in the 'data dir'
-    /// folder
+    /// folder.
     #[arg(short = 'P', long, default_value_t = 3000)]
     port: u16,
 }
@@ -61,7 +61,7 @@ impl Server {
         Ok(path)
     }
 
-    /// Runs the app
+    /// Runs the app.
     ///
     /// # Errors
     ///

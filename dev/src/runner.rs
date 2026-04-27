@@ -8,22 +8,22 @@ use crate::cli::{Action, Platform};
 use crate::tmux::Tmux;
 use crate::{Result, cmd};
 
-/// Runner for tmux
+/// Runner for tmux.
 pub struct Runner {
-    /// Action to be run
+    /// Action to be run.
     pub action: Action,
-    /// Platform on which to run the app
+    /// Platform on which to run the app.
     pub platform: Platform,
-    /// Path to the current working directory
+    /// Path to the current working directory.
     pub root_path: PathBuf,
-    /// Name of the tmux session
+    /// Name of the tmux session.
     pub session: String,
-    /// Full path to the current binary being run
+    /// Full path to the current binary being run.
     pub this: PathBuf,
 }
 
 impl Runner {
-    /// Runner entry point to execute what was intended by the user
+    /// Runner entry point to execute what was intended by the user.
     pub fn run(self) -> Result {
         match self.action {
             Action::All => self.run_all(),
@@ -52,7 +52,7 @@ impl Runner {
         }
     }
 
-    /// Runs the CLI
+    /// Runs the CLI.
     fn run_all(self) -> Result {
         let this = self.this.display();
         let dev = |what| format!("{this} --{what} -p {}", self.platform);
@@ -81,7 +81,7 @@ impl Runner {
         Ok(())
     }
 
-    /// Listens to the logs and prettify them
+    /// Listens to the logs and prettify them.
     fn run_logs(&self) -> Result {
         let mut child = Command::new("adb")
             .arg("logcat")
@@ -99,7 +99,7 @@ impl Runner {
     }
 }
 
-/// Logs an adb line with style
+/// Logs an adb line with style.
 #[expect(
     clippy::arithmetic_side_effects,
     clippy::string_slice,

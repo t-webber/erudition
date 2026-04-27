@@ -6,29 +6,29 @@ use erudition_lib::{Hashed, Item, Username};
 use serde::{Deserialize, Serialize};
 
 /// State data that is stored on the disk to be still available after the server
-/// is restarted
+/// is restarted.
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct StoredData {
-    /// List of feedback
+    /// List of feedback.
     feedback: Vec<String>,
-    /// List of current items
+    /// List of current items.
     items: Vec<Item>,
-    /// Maps username to password
+    /// Maps username to password.
     users: HashMap<Username, Hashed>,
 }
 
 impl StoredData {
-    /// Adds a new feedback entry
+    /// Adds a new feedback entry.
     pub fn add_feedback(&mut self, feedback: String) {
         self.feedback.push(feedback);
     }
 
-    /// Adds a new item entry
+    /// Adds a new item entry.
     pub fn add_item(&mut self, item: Item) {
         self.items.push(item);
     }
 
-    /// Adds a new user
+    /// Adds a new user.
     #[must_use]
     pub fn add_user(&mut self, username: Username, password: Hashed) -> bool {
         match self.users.entry(username) {
@@ -45,19 +45,19 @@ impl StoredData {
         self.items.get_mut(index).map(|old| replace(old, item))
     }
 
-    /// Returns all the feedback
+    /// Returns all the feedback.
     #[must_use]
     pub fn get_feedback(&self) -> &[String] {
         &self.feedback
     }
 
-    /// Returns every item
+    /// Returns every item.
     #[must_use]
     pub fn get_items(&self) -> &[Item] {
         &self.items
     }
 
-    /// Checks that those credentials are valid
+    /// Checks that those credentials are valid.
     pub fn get_user(&self, username: &Username) -> Option<&Hashed> {
         self.users.get(username)
     }

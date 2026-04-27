@@ -34,7 +34,7 @@ pub fn Questions() -> Element {
     rsx! {
 
         button {
-            onclick: move |_| if len != 0 {*index.write() = (index() + 1usize) % len},
+            onclick: move |_| if len != 0 {*index.write() = (index() + 1usize).rem_euclid(len)},
             "next"
         }
         button {

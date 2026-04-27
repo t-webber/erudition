@@ -17,7 +17,7 @@ use time::macros::format_description;
 
 use crate::storage::StoredData;
 
-/// Unlocks the mutex, even if poisened, as data can't really be corrupted
+/// Unlocks the mutex, even if poisened, as data can't really be corrupted.
 macro_rules! lock {
     ($data:expr) => {
         match $data.lock() {
@@ -36,34 +36,34 @@ const TEMP_DATA: &str = "data.temp";
 /// Name of the file within the state folder where the logs are written.
 const LOGS: &str = "logs";
 
-/// State of the server, accessible from all route handlers
+/// State of the server, accessible from all route handlers.
 #[derive(Default, Debug)]
 pub struct ServerState {
-    /// Data that is saved and reloaded
+    /// Data that is saved and reloaded.
     data: Mutex<StoredData>,
     /// Path of the folder where data is written (persistent state, logs,
     /// temporary files, etc.)
     path: PathBuf,
-    /// Session ids of logged in users
+    /// Session ids of logged in users.
     session_ids: Mutex<HashMap<SessionId, Username>>,
 }
 
 impl ServerState {
-    /// Save a new feedback
+    /// Save a new feedback.
     #[must_use]
     pub fn add_feedback(&self, feedback: String) -> bool {
         lock!(self.data).add_feedback(feedback);
         self.store()
     }
 
-    /// Adds a new item to the server
+    /// Adds a new item to the server.
     #[must_use]
     pub fn add_item(&self, item: Item) -> bool {
         lock!(self.data).add_item(item);
         self.store()
     }
 
-    /// Edit an existing item
+    /// Edit an existing item.
     #[must_use]
     pub fn edit_item(&self, index: usize, item: Item) -> Option<bool> {
         { lock!(self.data).edit_item(index, item) }.map(|old| {
@@ -72,22 +72,22 @@ impl ServerState {
         })
     }
 
-    /// Returns the path to a data file
+    /// Returns the path to a data file.
     fn file(&self, name: &str) -> PathBuf {
         self.path.join(name)
     }
 
-    /// Returns the list of feedback
+    /// Returns the list of feedback.
     pub fn get_feedback(&self) -> Vec<String> {
         lock!(self.data).get_feedback().to_owned()
     }
 
-    /// Returns the list of items currently on the server
+    /// Returns the list of items currently on the server.
     pub fn get_items(&self) -> Vec<Item> {
         lock!(self.data).get_items().to_owned()
     }
 
-    /// Loads the state from the given file path
+    /// Loads the state from the given file path.
     ///
     /// # Errors
     ///
@@ -139,7 +139,7 @@ impl ServerState {
         }
     }
 
-    /// Creates some timestamped log and prints it on the terminal
+    /// Creates some timestamped log and prints it on the terminal.
     #[expect(clippy::print_stderr, reason = "goal of function")]
     pub fn log_no_write(msg: &str) -> String {
         let format = format_description!(
@@ -153,7 +153,7 @@ impl ServerState {
         timed_msg
     }
 
-    /// Login a user
+    /// Login a user.
     ///
     /// Checks that username and password are valid, and returns a session id.
     #[must_use]
@@ -170,7 +170,7 @@ impl ServerState {
         self.make_session_id(auth.username)
     }
 
-    /// Makes a new session id for the given user
+    /// Makes a new session id for the given user.
     fn make_session_id(&self, username: Username) -> Option<SessionId> {
         let mut bytes = [0; 64];
         fill(&mut bytes).ok()?;
@@ -181,7 +181,7 @@ impl ServerState {
         Some(session_id)
     }
 
-    /// Signin a user
+    /// Signin a user.
     ///
     /// Checks that username and password are valid, and returns a session id.
     #[must_use]
@@ -201,7 +201,7 @@ impl ServerState {
     }
 
     /// Store the current state of the server at the given
-    /// file path
+    /// file path.
     pub fn store(&self) -> bool {
         self.log("Storing data");
         let tmp_file = self.file(TEMP_DATA);
@@ -236,7 +236,7 @@ impl ServerState {
     }
 }
 
-/// Casts and transforms a byte to make it valid ASCII for cookies
+/// Casts and transforms a byte to make it valid ASCII for cookies.
 #[expect(
     clippy::arithmetic_side_effects,
     clippy::integer_division_remainder_used,

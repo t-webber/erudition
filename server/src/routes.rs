@@ -7,7 +7,7 @@ use erudition_proc_macro::{get, post, put, routes};
 use crate::state::ServerState;
 
 /// Creates the response that matches an authentication request from a session
-/// id
+/// id.
 fn auth(res: Option<SessionId>) -> HttpResponse {
     res.map_or_else(
         || HttpResponse::Unauthorized().into(),

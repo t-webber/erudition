@@ -5,27 +5,27 @@ use color_eyre::eyre::{Context as _, eyre};
 
 use crate::{Result, cmd};
 
-/// Tmux handler, to run commands on a tmux session
+/// Tmux handler, to run commands on a tmux session.
 pub struct Tmux {
-    /// Index of the pane to know where to run the command
+    /// Index of the pane to know where to run the command.
     pane_index: usize,
-    /// Root path in which to run the commands inside the panes
+    /// Root path in which to run the commands inside the panes.
     root_path: PathBuf,
-    /// Name of the tmux session
+    /// Name of the tmux session.
     session: String,
 }
 impl Tmux {
-    /// Attaches the associated tmux session
+    /// Attaches the associated tmux session.
     pub fn attach(self) -> Result {
         cmd("tmux", &["attach-session", "-t", &self.session], &self.root_path)
     }
 
-    /// Creates the associated tmux session
+    /// Creates the associated tmux session.
     pub fn create(&self) -> Result {
         Self::tmux(&["new-session", "-d", "-s", &self.session, "-n", "main"])
     }
 
-    /// Kills the associated tmux session
+    /// Kills the associated tmux session.
     pub fn kill(self) -> Result {
         Self::tmux(&["kill-session", "-t", &self.session])
     }
@@ -35,7 +35,7 @@ impl Tmux {
         Self { pane_index: 0, root_path, session }
     }
 
-    /// Runs a tmux 'send-keys' command with nice error handling
+    /// Runs a tmux 'send-keys' command with nice error handling.
     pub fn run(&self, command: &str) -> Result {
         Self::tmux(&[
             "send-keys",
@@ -47,7 +47,7 @@ impl Tmux {
         Ok(())
     }
 
-    /// Creates a new pane with a horizontal split
+    /// Creates a new pane with a horizontal split.
     #[expect(clippy::arithmetic_side_effects, reason = "small")]
     pub fn split(&mut self) -> Result {
         Self::tmux(&["split-window", "-h", "-t", &self.session])?;
@@ -55,7 +55,7 @@ impl Tmux {
         Ok(())
     }
 
-    /// Runs a command with nice error handling
+    /// Runs a command with nice error handling.
     pub fn tmux(args: &[&str]) -> Result {
         let cmd = || format!("Failed to run `tmux {}`", args.join(" "));
 
@@ -78,7 +78,7 @@ impl Tmux {
         }
     }
 
-    /// Creates a new pane with a vertical split
+    /// Creates a new pane with a vertical split.
     #[expect(clippy::arithmetic_side_effects, reason = "small")]
     pub fn vsplit(&mut self) -> Result {
         Self::tmux(&["split-window", "-v", "-t", &self.session])?;
