@@ -1,5 +1,7 @@
 //! Server for the erudition app.
 
+/// Stores the location at which the data should be stored to and loaded from.
+mod dir;
 /// Server routes and their handler.
 mod routes;
 /// Server cli and runner.

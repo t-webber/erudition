@@ -14,6 +14,7 @@ use actix_web::web::Data;
 use actix_web::{App, test};
 use erudition_lib::{Auth, Item};
 
+use crate::dir::DataDir;
 use crate::routes::register_routes;
 use crate::state::ServerState;
 
@@ -53,22 +54,25 @@ fn ensure_not_exists(folder: &Path) {
     if folder.exists() {
         fs::remove_dir_all(folder).unwrap();
     }
+    fs::create_dir_all(folder).unwrap();
 }
 
-fn state(folder: &Path) -> Data<ServerState> {
-    Data::new(ServerState::load(folder.to_path_buf()).unwrap())
+fn state(folder: DataDir) -> Data<ServerState> {
+    Data::new(ServerState::load(folder).unwrap())
 }
 
-fn folder(name: &str) -> PathBuf {
+fn folder(name: &str) -> DataDir {
     let folder = target_dir().join("test").join(name);
     ensure_not_exists(&folder);
-    folder
+    DataDir::new(Some(folder)).unwrap()
 }
 
 macro_rules! app {
     ($folder:expr) => {
         init_service(
-            App::new().app_data(state(&$folder)).configure(register_routes),
+            App::new()
+                .app_data(state($folder.clone()))
+                .configure(register_routes),
         )
         .await
     };
@@ -115,7 +119,7 @@ async fn feedback() {
     assert_eq!(get!(&app, "/feedback"), ser);
     assert_eq!(get!(&app!(folder), "/feedback"), ser);
 
-    fs::remove_dir_all(&folder).unwrap();
+    fs::remove_dir_all(folder.as_path()).unwrap();
     assert_eq!(get!(&app!(folder), "/feedback"), "[]");
 }
 
@@ -163,7 +167,7 @@ async fn items() {
     assert_eq!(get!(app, "/items"), ser);
     assert_eq!(get!(app!(folder), "/items"), ser);
 
-    fs::remove_dir_all(&folder).unwrap();
+    ensure_not_exists(folder.as_path());
     assert_eq!(get!(app!(folder), "/items"), "[]");
 }
 
@@ -172,7 +176,7 @@ async fn server_error() {
     let folder = folder("server_error");
     let app = app!(folder);
 
-    ensure_not_exists(&folder);
+    fs::remove_dir_all(folder.as_path()).unwrap();
 
     let req =
         TestRequest::post().uri("/feedback").set_payload("data").to_request();
@@ -194,8 +198,7 @@ async fn not_found() {
 async fn invalid_data() {
     let folder = folder("invalid_data");
 
-    fs::create_dir_all(&folder).unwrap();
-    fs::write(folder.join("data"), "invalid data").unwrap();
+    fs::write(folder.as_path().join("data"), "invalid data").unwrap();
 
     let e = ServerState::load(folder).unwrap_err();
     assert!(e.to_string().contains("has invalid data"));

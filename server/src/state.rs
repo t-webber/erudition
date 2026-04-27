@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
 use std::io::Write as _;
-use std::path::PathBuf;
 use std::sync::Mutex;
 
 use argon2::password_hash::SaltString;
@@ -15,6 +14,7 @@ use getrandom::fill;
 use time::OffsetDateTime;
 use time::macros::format_description;
 
+use crate::dir::DataDir;
 use crate::storage::StoredData;
 
 /// Unlocks the mutex, even if poisened, as data can't really be corrupted.
@@ -27,23 +27,14 @@ macro_rules! lock {
     };
 }
 
-/// Name of the file within the state folder where the persistent data of the
-/// state is stored.
-const DATA: &str = "data";
-/// Name of the file within the state folder where writes occur, to prevent
-/// corrupting the file.
-const TEMP_DATA: &str = "data.temp";
-/// Name of the file within the state folder where the logs are written.
-const LOGS: &str = "logs";
-
 /// State of the server, accessible from all route handlers.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct ServerState {
     /// Data that is saved and reloaded.
     data: Mutex<StoredData>,
     /// Path of the folder where data is written (persistent state, logs,
     /// temporary files, etc.)
-    path: PathBuf,
+    path: DataDir,
     /// Session ids of logged in users.
     session_ids: Mutex<HashMap<SessionId, Username>>,
 }
@@ -72,11 +63,6 @@ impl ServerState {
         })
     }
 
-    /// Returns the path to a data file.
-    fn file(&self, name: &str) -> PathBuf {
-        self.path.join(name)
-    }
-
     /// Returns the list of feedback.
     pub fn get_feedback(&self) -> Vec<String> {
         lock!(self.data).get_feedback().to_owned()
@@ -93,8 +79,8 @@ impl ServerState {
     ///
     /// Returns an error if an state was stored in the data file, but it can't
     /// read it or it is invalid.
-    pub fn load(path: PathBuf) -> color_eyre::Result<Self> {
-        let data_path = path.join(DATA);
+    pub fn load(path: DataDir) -> color_eyre::Result<Self> {
+        let data_path = path.data();
         let data_exists = fs::exists(&data_path).with_context(|| {
             format!(
                 "Failed to check existence of {}, do I have access?",
@@ -102,6 +88,10 @@ impl ServerState {
             )
         })?;
         let data = if data_exists {
+            Self::log_no_write(&format!(
+                "Loading data from {}",
+                data_path.display()
+            ));
             postcard::from_bytes(
                 fs::read_to_string(&data_path)
                     .with_context(|| {
@@ -113,19 +103,20 @@ impl ServerState {
                 format!("File {} has invalid data", data_path.display())
             })?
         } else {
+            Self::log_no_write(&format!(
+                "{} not found, starting with no data",
+                data_path.display()
+            ));
             StoredData::default()
         }
         .into();
-        fs::create_dir_all(&path).with_context(|| {
-            format!("Failed to create parent of {}", path.display())
-        })?;
         Ok(Self { data, path, session_ids: Mutex::default() })
     }
 
     /// Writes some timestamped log to the log file and to the terminal.
     pub fn log(&self, msg: &str) {
         let timed_msg = Self::log_no_write(msg);
-        let log_path = self.file(LOGS);
+        let log_path = self.path.logs();
         if let Err(err) = fs::OpenOptions::new()
             .create(true)
             .append(true)
@@ -204,8 +195,8 @@ impl ServerState {
     /// file path.
     pub fn store(&self) -> bool {
         self.log("Storing data");
-        let tmp_file = self.file(TEMP_DATA);
-        let data_file = self.file(DATA);
+        let tmp_file = self.path.data_temp();
+        let data_file = self.path.data();
         postcard::to_allocvec(&self.data)
             .map_err(|err| {
                 format!(
