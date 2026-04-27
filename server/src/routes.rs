@@ -10,7 +10,7 @@ use crate::state::ServerState;
 /// id.
 fn auth(res: Option<SessionId>) -> HttpResponse {
     res.map_or_else(
-        || HttpResponse::Unauthorized().into(),
+        || HttpResponse::Unauthorized().into(), // ignore-spell
         |session_id| {
             let cookie = Cookie::build("session_id", &*session_id.0)
                 .http_only(true)

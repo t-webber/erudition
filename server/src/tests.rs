@@ -247,8 +247,8 @@ async fn auth() {
         }};
     }
 
-    auth!("/login", UNAUTHORIZED);
+    auth!("/login", UNAUTHORIZED); // ignore-spell
     auth!("/signin", OK);
     auth!("/login", OK);
-    auth!("/signin", UNAUTHORIZED);
+    auth!("/signin", UNAUTHORIZED); // ignore-spell
 }
