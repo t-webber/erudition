@@ -2,7 +2,7 @@ use actix_web::HttpResponse;
 use actix_web::cookie::{Cookie, SameSite};
 use actix_web::web::{Data, Json, Path, ServiceConfig};
 use erudition_lib::{Auth, Item, SessionId};
-use proc_macro::{get, post, put, routes};
+use erudition_proc_macro::{get, post, put, routes};
 
 use crate::state::ServerState;
 
