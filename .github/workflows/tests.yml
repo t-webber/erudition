@@ -35,6 +35,9 @@ jobs:
                 key: tests-target-${{ matrix.rust }}
                 restore-keys: tests-target-${{ matrix.rust }}
 
+            - name: Install mold
+              uses: rui314/setup-mold@v1
+
             - name: Install Rust
               uses: actions-rs/toolchain@v1
               with:
