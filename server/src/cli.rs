@@ -49,7 +49,7 @@ impl Server {
         let data_dir = DataDir::new(self.folder_path)?;
 
         if self.initialise {
-            return Initialise::initialise(&data_dir);
+            return Initialise::initialise(data_dir);
         }
 
         let state = Data::new(ServerState::load(data_dir)?);

@@ -3,14 +3,14 @@ use dioxus::hooks::{use_resource, use_signal};
 use dioxus::prelude::*;
 use erudition_lib::Item;
 
-/// Cross-platform HOST ip.
+/// Cross-platform HOST IP.
 const HOST: &str =
     if cfg!(target_os = "android") { "10.0.2.2" } else { "127.0.0.1" };
 
 #[component]
 pub fn Questions() -> Element {
     let default_item =
-        Item::MultipleChoice { answers: vec![], question: "a question".into() };
+        Item { answer: "an answer".into(), question: "a question".into() };
 
     let mut refetch = use_signal(|| true);
     let items = use_resource(move || async move {
@@ -27,7 +27,7 @@ pub fn Questions() -> Element {
         .get(index())
         .unwrap_or(&default_item)
         .clone()
-        .question();
+        .question;
     let len =
         items.read().clone().unwrap_or_default().unwrap_or_default().len();
 

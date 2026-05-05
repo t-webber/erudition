@@ -35,28 +35,14 @@ impl Auth {
 }
 
 /// Item store and returned by the server.
-#[non_exhaustive]
-#[expect(clippy::enum_variant_names, reason = "only one variant")]
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Item {
-    /// Multiple choice question.
-    MultipleChoice {
-        /// Possible answers, the first is always the
-        /// correct answer.
-        answers: Vec<Box<str>>,
-        /// Question.
-        question: Box<str>,
-    },
-}
-
-impl Item {
-    /// Returns the question that corresponds to the this item.
-    #[must_use]
-    pub fn question(self) -> Box<str> {
-        match self {
-            Self::MultipleChoice { question, .. } => question,
-        }
-    }
+#[expect(clippy::exhaustive_structs, reason = "no fields should be added")]
+pub struct Item {
+    /// Possible answers, the first is always the
+    /// correct answer.
+    pub answer: Box<str>,
+    /// Question.
+    pub question: Box<str>,
 }
 
 newtype!(SessionId, Username, Hashed);

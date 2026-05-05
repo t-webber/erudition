@@ -131,18 +131,15 @@ async fn items() {
     assert_eq!(get!(&app, "/items"), "[]");
 
     macro_rules! item {
-        ($question:literal, $($answer:literal),*) => {
-            Item::MultipleChoice {
-                answers: vec![ $($answer.into()),* ],
-                question: $question.into(),
-            }
+        ($question:literal, $answer:literal) => {
+            Item { answer: $answer.into(), question: $question.into() }
         };
     }
 
     let mut items = vec![
-        item!("a", "b", "c", "d"),
-        item!("question", "answer1", "answer2"),
-        item!("only_question",),
+        item!("a", "b"),
+        item!("question", "answer"),
+        item!("only_question", ""),
     ];
 
     for item in &items {
@@ -150,7 +147,7 @@ async fn items() {
         assert_eq!(res!(&app, req), "");
     }
 
-    let new_first = item!("e", "f", "g", "h");
+    let new_first = item!("e", "f");
     items[0] = new_first.clone();
     let req =
         TestRequest::put().uri("/item/0").set_json(new_first).to_request();

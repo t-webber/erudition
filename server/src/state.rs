@@ -92,13 +92,9 @@ impl ServerState {
                 "Loading data from {}",
                 data_path.display()
             ));
-            postcard::from_bytes(
-                fs::read_to_string(&data_path)
-                    .with_context(|| {
-                        format!("Failed to read {}", data_path.display())
-                    })?
-                    .as_bytes(),
-            )
+            postcard::from_bytes(&fs::read(&data_path).with_context(|| {
+                format!("Failed to read {}", data_path.display())
+            })?)
             .with_context(|| {
                 format!("File {} has invalid data", data_path.display())
             })?

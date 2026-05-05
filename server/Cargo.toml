@@ -13,6 +13,10 @@ dirs.workspace = true
 erudition-lib.workspace = true
 erudition-proc-macro.workspace = true
 getrandom.workspace = true
+polars = { version = "0.53.0", features = [
+  "polars-io",
+  "csv",
+], default-features = false }
 postcard.workspace = true
 serde.workspace = true
 time.workspace = true
