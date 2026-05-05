@@ -6,10 +6,12 @@ on:
       - '**/*.rs'
       - '.github/workflows/clippy.yml'
       - 'Cargo.*'
+      - '.cargo/**'
   pull_request:
     paths:
       - '**/*.rs'
       - 'Cargo.*'
+      - '.cargo/**'
 
 env:
     CARGO_TERM_COLOR: always

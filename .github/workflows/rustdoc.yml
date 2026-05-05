@@ -5,10 +5,12 @@ on:
     paths:
       - '**/*.rs'
       - '.github/workflows/rustdoc.yml'
+      - '.cargo/**'
   pull_request:
     paths:
       - '**/*.rs'
       - '.github/workflows/rustdoc.yml'
+      - '.cargo/**'
 
 env:
     CARGO_TERM_COLOR: always
